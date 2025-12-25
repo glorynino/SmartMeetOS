@@ -44,7 +44,7 @@ subgraph LG["LangGraph Core"]
 
     %% Action flow
     AA["Action Agent"]
-    PUSH["Tool: Push Notification<br/>(Twilio / Slack)"]
+    PUSH["Tool: Push Notification<br/>(Twilio / discord)"]
     NOTION_ACT["Tool: Notion API"]
     ALERT["Send Immediate Alerts"]
 
