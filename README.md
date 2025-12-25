@@ -1,2 +1,95 @@
 # SmartMeetOS
-MeetingOS is an agentic system that turns meetings into actions by transcribing conversations, reasoning on decisions, and autonomously executing follow-ups using connected tools.
+
+**SmartMeetOS** is an agentic system that turns meetings into actions by transcribing conversations, reasoning over decisions, and autonomously executing follow-ups using connected tools.
+
+---
+
+## 🧠 What it does
+- Automatically joins scheduled meetings
+- Transcribes audio and captures chat/messages
+- Reasons over discussions to extract decisions, action items, and deadlines
+- Executes actions autonomously (tasks, notifications, calendar updates)
+- Tracks outcomes and prepares concise summaries for the next meeting
+
+---
+
+## 🏗️ Architecture Overview
+
+```mermaid
+flowchart TB
+
+%% =========================
+%% Monitoring & Trigger
+%% =========================
+subgraph MT["Monitoring & Trigger"]
+    GC["Google Calendar Monitor"]
+    MST["Meeting Start Trigger"]
+    GC --> MST
+end
+
+MST -->|Meeting URL & Time| NY["Nylas API<br/>Joins & Records"]
+NY --> PM["Post-Meeting:<br/>Transcript & Data"]
+
+%% =========================
+%% LangGraph Core
+%% =========================
+subgraph LG["LangGraph Core"]
+    SA["Supervisor Agent"]
+
+    %% Documentation flow
+    DA["Documentation Agent"]
+    NOTION_DOC["Tool: Notion API"]
+    DIAG["Tool: Diagram Generator<br/>(e.g. Mermaid)"]
+    CRS["Compile Rich Summary"]
+
+    %% Action flow
+    AA["Action Agent"]
+    PUSH["Tool: Push Notification<br/>(Twilio / Slack)"]
+    NOTION_ACT["Tool: Notion API"]
+    ALERT["Send Immediate Alerts"]
+
+    %% Scheduling flow
+    SCHED["Scheduling Agent"]
+    GC_API["Tool: Google Calendar API"]
+    REM["Tool: Reminders via<br/>Google Calendar"]
+    SREM["Schedule & Set Reminders"]
+
+    SA -->|Content for Documentation| DA
+    SA -->|Urgent User Actions| AA
+    SA -->|Future Events & Dates| SCHED
+
+    DA --> NOTION_DOC
+    DA --> DIAG
+    NOTION_DOC --> CRS
+    DIAG --> CRS
+
+    AA --> PUSH
+    AA --> NOTION_ACT
+    PUSH --> ALERT
+    NOTION_ACT --> ALERT
+
+    SCHED --> GC_API
+    SCHED --> REM
+    GC_API --> SREM
+    REM --> SREM
+end
+
+PM --> SA
+
+%% =========================
+%% User Delivery Hub
+%% =========================
+subgraph UD["User Delivery Hub"]
+    HUB["User Delivery Hub"]
+    NP["Notion Page"]
+    PN["Push Notification"]
+    CE["Calendar Event"]
+
+    HUB --> NP
+    HUB --> PN
+    HUB --> CE
+end
+
+CRS --> HUB
+ALERT --> HUB
+SREM --> HUB
