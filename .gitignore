@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+
+# OAuth secrets/tokens (never commit)
+secrets/
+.secrets/
+token.json
+google_token.json
+client_secret*.json
