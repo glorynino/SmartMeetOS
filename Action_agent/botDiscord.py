@@ -9,7 +9,7 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN manquant")
 
-USER_ID = 714920350575493130  # ID Discord du user
+#HERE U PUT THE ID   USER_ID =   
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
