@@ -222,6 +222,10 @@ def run_once(args: argparse.Namespace) -> int:
                         api_base=args.nylas_api_base,
                         grant_id=args.nylas_grant_id,
                         name=args.nylas_notetaker_name,
+                        meeting_settings={
+                            "transcription": True,
+                            "audio_recording": True,
+                        },
                     )
                     print(f"  NYLAS: created notetaker id={result.id or '(unknown)'}")
 
