@@ -1,4 +1,3 @@
-.env
 # Python
 __pycache__/
 *.py[cod]
@@ -14,9 +13,16 @@ __pycache__/
 venv/
 env/
 
-# Environment variables
+# Environment variables / secrets
 .env
 .streamlit/secrets.toml
+
+# OAuth secrets/tokens (never commit)
+secrets/
+.secrets/
+token.json
+google_token.json
+client_secret*.json
 
 # IDE files
 .vscode/
@@ -29,6 +35,6 @@ env/
 .DS_Store
 Thumbs.db
 
-
+# Runtime outputs
 transcripts/
 logs/
