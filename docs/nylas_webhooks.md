@@ -25,7 +25,7 @@ This repo includes a minimal webhook receiver:
 
 Run it:
 
-- `C:/Users/Abderrahmane/Desktop/SmartMeetOS/.venv/Scripts/python.exe webhook_receiver.py --port 8000`
+- `C:/Users/Abderrahmane/Desktop/SmartMeetOS/.venv/Scripts/python.exe -m services.tools.webhook_receiver --port 8000`
 
 Output files:
 

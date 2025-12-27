@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import os
@@ -250,8 +251,53 @@ def default_paths() -> tuple[Path, Path]:
     # Keep secrets out of git: user should place client_secret.json in ./secrets
     repo_root = Path(__file__).resolve().parents[2]
 
+    state_dir_env = os.environ.get("SMARTMEETOS_STATE_DIR")
+    state_dir = Path(state_dir_env) if state_dir_env else (repo_root / ".secrets")
+
     client_secret_env = os.environ.get("GOOGLE_CLIENT_SECRET_FILE")
     client_secret_file = Path(client_secret_env) if client_secret_env else repo_root / "secrets" / "client_secret.json"
 
-    token_file = repo_root / ".secrets" / "google_token.json"
+    # Optional: provide the client secret JSON contents via env (useful on Render).
+    if not client_secret_file.exists():
+        raw = os.environ.get("GOOGLE_CLIENT_SECRET_JSON")
+        b64 = os.environ.get("GOOGLE_CLIENT_SECRET_JSON_BASE64")
+        payload: str | None = None
+        if isinstance(raw, str) and raw.strip():
+            payload = raw
+        elif isinstance(b64, str) and b64.strip():
+            try:
+                payload = base64.b64decode(b64).decode("utf-8")
+            except Exception:
+                payload = None
+        if isinstance(payload, str) and payload.strip():
+            client_secret_file.parent.mkdir(parents=True, exist_ok=True)
+            client_secret_file.write_text(payload, encoding="utf-8")
+
+    token_file = state_dir / "google_token.json"
+
+    # Optional: seed the OAuth token JSON via env.
+    if not token_file.exists():
+        token_seed_file = os.environ.get("GOOGLE_TOKEN_FILE")
+        if isinstance(token_seed_file, str) and token_seed_file.strip():
+            try:
+                payload = Path(token_seed_file).read_text(encoding="utf-8")
+                if payload.strip():
+                    token_file.parent.mkdir(parents=True, exist_ok=True)
+                    token_file.write_text(payload, encoding="utf-8")
+            except Exception:
+                pass
+
+        raw = os.environ.get("GOOGLE_TOKEN_JSON")
+        b64 = os.environ.get("GOOGLE_TOKEN_JSON_BASE64")
+        payload: str | None = None
+        if isinstance(raw, str) and raw.strip():
+            payload = raw
+        elif isinstance(b64, str) and b64.strip():
+            try:
+                payload = base64.b64decode(b64).decode("utf-8")
+            except Exception:
+                payload = None
+        if isinstance(payload, str) and payload.strip():
+            token_file.parent.mkdir(parents=True, exist_ok=True)
+            token_file.write_text(payload, encoding="utf-8")
     return client_secret_file, token_file

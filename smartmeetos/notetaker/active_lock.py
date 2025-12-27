@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,7 +13,9 @@ def _repo_root() -> Path:
 
 
 def _lock_path() -> Path:
-    return _repo_root() / ".secrets" / "active_meeting.json"
+    env = os.environ.get("SMARTMEETOS_STATE_DIR")
+    base = Path(env) if env else (_repo_root() / ".secrets")
+    return base / "active_meeting.json"
 
 
 def _utc_now() -> dt.datetime:

@@ -48,11 +48,20 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False)
+    # Google OAuth
+    google_email = Column(String(255), nullable=True)
+    google_refresh_token = Column(Text, nullable=True)
+    google_token_expiry = Column(DateTime, nullable=True)
+    # Nylas
+    nylas_grant_id = Column(String(255), nullable=True)
+    # Integrations
     notion_token = Column(Text)
     notion_url = Column(Text)
     discord_id = Column(String(100))
     phone_number = Column(String(20))
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Meeting(Base):
     __tablename__ = 'meetings'
@@ -126,4 +135,21 @@ class CalendarEvent(Base):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     reminder_policy = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Transcript(Base):
+    """Stores transcripts received from Nylas webhook callbacks."""
+    __tablename__ = 'transcripts'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    meeting_id = Column(UUID(as_uuid=True), ForeignKey('meetings.id'), nullable=True)
+    notetaker_id = Column(String(255), nullable=False)
+    google_event_id = Column(String(500), nullable=True)
+    meeting_title = Column(String(500), nullable=True)
+    transcript_content = Column(Text, nullable=True)
+    transcript_url = Column(Text, nullable=True)
+    recording_url = Column(Text, nullable=True)
+    status = Column(String(50), default='received')
+    received_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)

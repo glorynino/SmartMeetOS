@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import random
 import threading
 import time
@@ -63,7 +64,8 @@ def _repo_root() -> Path:
 
 
 def _secrets_dir() -> Path:
-    return _repo_root() / ".secrets"
+    env = os.environ.get("SMARTMEETOS_STATE_DIR")
+    return Path(env) if env else (_repo_root() / ".secrets")
 
 
 def _transcripts_dir() -> Path:

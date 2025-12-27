@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -139,11 +140,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _trigger_state_path() -> Path:
-    return Path(__file__).resolve().parent / ".secrets" / "trigger_state.json"
+    env = os.environ.get("SMARTMEETOS_STATE_DIR")
+    base = Path(env) if env else (Path(__file__).resolve().parent / ".secrets")
+    return base / "trigger_state.json"
 
 
 def _meeting_results_path() -> Path:
-    return Path(__file__).resolve().parent / ".secrets" / "meeting_results.json"
+    env = os.environ.get("SMARTMEETOS_STATE_DIR")
+    base = Path(env) if env else (Path(__file__).resolve().parent / ".secrets")
+    return base / "meeting_results.json"
 
 
 def _load_meeting_results(path: Path) -> dict[str, Any]:

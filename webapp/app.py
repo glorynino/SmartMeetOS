@@ -15,13 +15,16 @@ st.header("1. Database Connection Test")
 try:
     from database.connection import SessionLocal
     from database.models import User
-    
+
+    if SessionLocal is None:
+        raise RuntimeError("DATABASE_URL is not set")
+
     db = SessionLocal()
     user_count = db.query(User).count()
     db.close()
-    
+
     st.success(f"✅ Connected to Supabase! Found {user_count} user(s) in the database.")
-    
+
 except Exception as e:
     st.error(f"❌ Database connection failed: {e}")
     st.info("Check your `.env` file and ensure `DATABASE_URL` is set to the **Session Mode** pooler from Supabase.")
@@ -42,6 +45,14 @@ st.header("3. Calendar Watcher (real)")
 
 try:
     from services.runtime_watcher import get_watcher_status, start_watcher, stop_watcher
+
+    # Render best practice: run the watcher as a separate Background Worker.
+    # The Streamlit web process should not spawn long-running subprocesses.
+    if os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_ID"):
+        st.info(
+            "On Render, deploy the watcher as a separate Background Worker (see render.yaml / docs/deployment.md)."
+        )
+        st.stop()
 
     status = get_watcher_status()
     if status.running:

@@ -27,7 +27,15 @@ Environment variables supported:
 - `NYLAS_API_KEY`
 - `NYLAS_API_BASE` (optional)
 
+For the Streamlit web UI database test, you can also set:
+
+- `DATABASE_URL` (optional)
+
 Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
+
+## Deployment
+
+Non-Docker deployment steps are documented in [docs/deployment.md](docs/deployment.md).
 
 ## Architecture (big project)
 

@@ -14,6 +14,10 @@ def create_tables():
     print(f"Project root: {project_root}")
     print(f"Connecting to Supabase...")
 
+    if engine is None:
+        print("Error: DATABASE_URL is not set (engine not configured).")
+        sys.exit(1)
+
     try:
         print("Creating tables...")
         Base.metadata.create_all(bind=engine)
