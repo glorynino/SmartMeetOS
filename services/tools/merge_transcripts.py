@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 from smartmeetos.notetaker.transcript_merge import merge_all_meetings_in_dir, merge_transcripts_for_meeting
+
+
+def _repo_root() -> Path:
+    # This file lives at services/tools/*.py
+    return Path(__file__).resolve().parents[2]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
 
-    transcripts_dir = Path(args.dir) if args.dir else (Path(__file__).resolve().parent / ".secrets" / "transcripts")
+    transcripts_dir = Path(args.dir) if args.dir else (_repo_root() / ".secrets" / "transcripts")
 
     if args.event_id and args.event_start:
         out_json, out_txt = merge_transcripts_for_meeting(

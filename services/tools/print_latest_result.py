@@ -7,7 +7,8 @@ from typing import Any
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parent
+    # This file lives at services/tools/*.py
+    return Path(__file__).resolve().parents[2]
 
 
 def _results_path() -> Path:

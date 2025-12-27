@@ -3,7 +3,13 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import sys
+from pathlib import Path
 from typing import Any
+
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from smartmeetos.calendar.google_calendar import utc_now
 from smartmeetos.notetaker.supervisor import SupervisorConfig, supervise_meeting
