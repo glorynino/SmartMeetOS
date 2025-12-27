@@ -9,7 +9,7 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("TOKEN manquant dans le fichier .env")
 
-# ⚠️ IMPORTANT : Active "Server Members Intent" sur le Discord Developer Portal
+
 intents = discord.Intents.default()
 intents.members = True
 intents.guilds = True
