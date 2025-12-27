@@ -26,28 +26,3 @@ services:
       - key: APP_BASE_URL
         sync: false
     healthCheckPath: /health
-
-  # Cron Job: Worker that checks calendars and triggers notetakers
-  - type: cron
-    name: smartmeetos-worker
-    runtime: python
-    plan: starter  # Cron jobs require paid plan (minimum: starter)
-    buildCommand: pip install -r requirements.txt
-    schedule: "*/5 * * * *" # Every 5 minutes
-    startCommand: python worker.py
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.11"
-      # Database (required)
-      - key: DATABASE_URL
-        sync: false
-      # Google OAuth (required for refreshing tokens)
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      # Nylas API (required)
-      - key: NYLAS_API_KEY
-        sync: false
-      - key: NYLAS_API_BASE
-        value: "https://api.us.nylas.com"
