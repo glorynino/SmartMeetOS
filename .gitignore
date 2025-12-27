@@ -1,6 +1,21 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.py,cover
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Environment variables / secrets
+.env
+.streamlit/secrets.toml
 
 # OAuth secrets/tokens (never commit)
 secrets/
@@ -8,3 +23,18 @@ secrets/
 token.json
 google_token.json
 client_secret*.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Runtime outputs
+transcripts/
+logs/
