@@ -1,21 +1,21 @@
+# Google & Time Utilities
 google-api-python-client>=2.155.0
 google-auth>=2.36.0
 google-auth-oauthlib>=1.2.1
 python-dateutil>=2.9.0.post0
 requests>=2.32.0
 
-# Agent orchestration
+# Smart Chunking
+langchain-text-splitters>=0.3.0
+
+# Agent Orchestration
 langgraph>=0.2.0
 
-# App / deployment
-python-dotenv>=1.0.0
-
-# Kept for compatibility with older setups (optional)
-dotenv
-discord
-
-# Big-project dependencies
+# App, Database & Deployment
 python-dotenv>=1.0.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 streamlit>=1.28.0
+
+# Integrations
+discord.py>=2.3.0

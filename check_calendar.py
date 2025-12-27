@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -20,6 +21,9 @@ from smartmeetos.notetaker.nylas_notetaker import create_notetaker
 from smartmeetos.notetaker.active_lock import acquire_active_lock, release_active_lock
 from smartmeetos.notetaker.failure_codes import FailureCode, MeetingRunResult
 from smartmeetos.notetaker.supervisor import SupervisorConfig, supervise_meeting
+from smartmeetos.notetaker.transcript_merge import merge_transcripts_for_meeting
+
+from agents.chunk_extraction_pipeline import MEETING_SOURCE_VALUES, run_transcript_to_db_jsonl
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -135,6 +139,38 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to store OAuth token JSON. If omitted, uses ./.secrets/google_token.json",
     )
+
+    # Optional: run Smart Chunker + Groq fact extraction after a meeting completes.
+    p.add_argument(
+        "--extract-facts",
+        action="store_true",
+        help=(
+            "After a supervised run, merge the meeting transcript and run smart chunking + Groq fact extraction. "
+            "Requires GROQ_API_KEY. Writes DB-shaped JSONL under SMARTMEETOS_STATE_DIR."
+        ),
+    )
+    p.add_argument(
+        "--extract-source",
+        default="google_meet",
+        choices=sorted(MEETING_SOURCE_VALUES.keys()),
+        help="Meeting source for extracted outputs (default: google_meet).",
+    )
+    p.add_argument("--extract-max-chars", type=int, default=2000, help="Chunk size (chars) for smart chunker.")
+    p.add_argument("--extract-overlap-chars", type=int, default=200, help="Overlap (chars) for smart chunker.")
+    p.add_argument(
+        "--extract-max-workers",
+        type=int,
+        default=None,
+        help="Parallel extraction workers (default: EXTRACT_MAX_WORKERS env or 4).",
+    )
+    p.add_argument(
+        "--extract-out-dir",
+        default=None,
+        help=(
+            "Where to write transcript_chunks_*.jsonl and extracted_facts_*.jsonl. "
+            "Default: SMARTMEETOS_STATE_DIR/db_jsonl"
+        ),
+    )
     return p
 
 
@@ -144,6 +180,10 @@ def _trigger_state_path() -> Path:
 
 def _meeting_results_path() -> Path:
     return Path(__file__).resolve().parent / ".secrets" / "meeting_results.json"
+
+
+def _transcripts_dir() -> Path:
+    return Path(__file__).resolve().parent / ".secrets" / "transcripts"
 
 
 def _load_meeting_results(path: Path) -> dict[str, Any]:
@@ -534,6 +574,45 @@ def run_once(args: argparse.Namespace) -> int:
                     meet_url=chosen_ev.meet_url,
                     start_utc=chosen_start_iso,
                 )
+
+        # Optional: merge transcript and run smart chunking + Groq extraction.
+        if (
+            args.extract_facts
+            and not args.dry_run
+            and args.nylas_notetaker
+            and result_obj.ok
+            and not result_obj.failure_code
+        ):
+            td = _transcripts_dir()
+            merged_json, merged_txt = merge_transcripts_for_meeting(
+                transcripts_dir=td,
+                event_id=chosen_ev.id,
+                event_start=chosen_start_iso,
+                force=False,
+            )
+
+            if merged_txt is None or not merged_txt.exists():
+                print("  EXTRACT: no merged transcript yet (skipping)")
+            else:
+                transcript_text = merged_txt.read_text(encoding="utf-8", errors="replace")
+                out_dir = Path(args.extract_out_dir) if args.extract_out_dir else None
+                max_workers = (
+                    int(args.extract_max_workers)
+                    if args.extract_max_workers is not None
+                    else int(os.environ.get("EXTRACT_MAX_WORKERS", "4"))
+                )
+
+                transcript_chunks_path, extracted_facts_path = run_transcript_to_db_jsonl(
+                    transcript_text=transcript_text,
+                    meeting_id=chosen_ev.id,
+                    source=args.extract_source,
+                    out_dir=(out_dir if out_dir is not None else (_state_dir() / "db_jsonl")),
+                    max_chars=int(args.extract_max_chars),
+                    overlap_chars=int(args.extract_overlap_chars),
+                    max_workers=max_workers,
+                )
+                print(f"  EXTRACT: transcript_chunks -> {transcript_chunks_path}")
+                print(f"  EXTRACT: extracted_facts   -> {extracted_facts_path}")
 
         print("")
 

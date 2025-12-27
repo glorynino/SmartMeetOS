@@ -29,34 +29,13 @@ Environment variables supported:
 
 Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
 
-## Run (chunk fact extraction, local/free)
+## Run (chunk fact extraction, Groq API)
 
-For a free LLM setup, run locally with Ollama.
-
-1. Install Ollama and pull a model (example):
-
-```bash
-ollama pull qwen2.5:7b-instruct
-```
-
-2. Extract facts from a transcript text file:
-
-```bash
-set LLM_PROVIDER=ollama
-set OLLAMA_MODEL=qwen2.5:7b-instruct
-python -m agents.chunk_extractor --input path/to/transcript.txt
-```
-
-This writes JSONL records under `.smartmeetos_state/extracted_facts/` by default.
-
-## Run (chunk fact extraction, Groq API / deployed)
-
-If you want this to run in a deployed environment without hosting a model, use Groq.
+Chunk extraction uses Groq (API-based LLM). This works locally and in a deployed environment.
 
 Set env vars:
 
 ```bash
-set LLM_PROVIDER=groq
 set GROQ_API_KEY=your_key
 set GROQ_MODEL=llama-3.1-8b-instant
 ```
@@ -68,6 +47,7 @@ python -m agents.chunk_extractor --input path/to/transcript.txt
 ```
 
 Notes:
+
 - `llama-3.1-8b-instant` is the default/recommended model for fast chunk extraction.
 - If you hit 429 rate limits, lower parallelism with `set EXTRACT_MAX_WORKERS=2`.
 
@@ -77,16 +57,6 @@ If you want the pipeline to match the “Parallelization” workflow pattern, yo
 run the LangGraph orchestrated version:
 
 ```bash
-pip install -r requirements.txt
-set LLM_PROVIDER=ollama
-set OLLAMA_MODEL=qwen2.5:7b-instruct
-python -m agents.chunk_extractor_graph --input path/to/transcript.txt
-```
-
-For Groq + bounded parallelism:
-
-```bash
-set LLM_PROVIDER=groq
 set GROQ_API_KEY=your_key
 set GROQ_MODEL=llama-3.1-8b-instant
 set EXTRACT_MAX_WORKERS=4

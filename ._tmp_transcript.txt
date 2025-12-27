@@ -1,0 +1,4 @@
+Alice: Hello
+Bob: Hi there
+Alice: Let's decide on Friday.
+Bob: Ok.
