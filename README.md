@@ -16,80 +16,91 @@
 ## 🏗️ Architecture Overview
 
 ```mermaid
-flowchart TB
+graph TB
+    subgraph Input["Input & Storage"]
+        A[Nylas Webhook]
+        B[Raw Transcript]
+        C[(meetings table)]
+        A --> B
+        B --> C
+    end
 
-%% =========================
-%% Monitoring & Trigger
-%% =========================
-subgraph MT["Monitoring & Trigger"]
-    GC["Google Calendar Monitor"]
-    MST["Meeting Start Trigger"]
-    GC --> MST
-end
+    subgraph Processing["Chunking & Parallel Fact Extraction"]
+        D{Processing Pipeline}
+        E[Smart Chunker Node]
+        F[Chunk 1]
+        G[Chunk 2]
+        H[...]
+        I[Chunk Extractor LLM Node]
+        J[Chunk Extractor LLM Node]
+        K[...]
+        L[(extracted_facts<br/>group_label: NULL)]
+        
+        C --> D
+        D --> E
+        E -->|Splits into| F
+        E -->|Splits into| G
+        E -->|Splits into| H
+        F --> I
+        G --> J
+        H --> K
+        I -->|Creates| L
+        J -->|Creates| L
+        K -->|Creates| L
+    end
 
-MST -->|Meeting URL & Time| NY["Nylas API<br/>Joins & Records"]
-NY --> PM["Post-Meeting:<br/>Transcript & Data"]
+    subgraph Semantic["Semantic Grouping & Conflict Resolution"]
+        M{Aggregator Router}
+        N[Grouping Node]
+        O[Aggregator LLM Node<br/>for Group A]
+        P[Aggregator LLM Node<br/>for Group B]
+        Q[...]
+        R[(meeting_inputs table)]
+        
+        L --> M
+        L -->|Labels facts with<br/>group_label| N
+        M -->|Routes each group| O
+        M -->|Routes each group| P
+        M -->|Routes each group| Q
+        N -->|Queries ungrouped facts<br/>Clusters by context| N
+        O -->|Writes final, resolved<br/>context to| R
+        P -->|Writes final, resolved<br/>context to| R
+        Q -->|Writes final, resolved<br/>context to| R
+    end
 
-%% =========================
-%% LangGraph Core
-%% =========================
-subgraph LG["LangGraph Core"]
-    SA["Supervisor Agent"]
+    subgraph Action["Action Orchestration"]
+        S[Supervisor/Router Node]
+        T[Documentation Agent]
+        U[Action Agent]
+        V[Scheduling Agent]
+        W[Notion API]
+        X[Discord/Twilio API]
+        Y[Google Calendar API]
+        Z[(document_outputs)]
+        AA[(tasks)]
+        AB[(calendar_events)]
+        
+        R --> S
+        S -->|Routes by intent| T
+        S -->|Routes by intent| U
+        S -->|Routes by intent| V
+        T --> W
+        U --> X
+        V --> Y
+        W --> Z
+        X --> AA
+        Y --> AB
+    end
 
-    %% Documentation flow
-    DA["Documentation Agent"]
-    NOTION_DOC["Tool: Notion API"]
-    DIAG["Tool: Diagram Generator<br/>(e.g. Mermaid)"]
-    CRS["Compile Rich Summary"]
+    subgraph Delivery["User Delivery"]
+        AC[User Delivery]
+        Z --> AC
+        AA --> AC
+        AB --> AC
+    end
 
-    %% Action flow
-    AA["Action Agent"]
-    PUSH["Tool: Push Notification<br/>(Twilio / discord)"]
-    NOTION_ACT["Tool: Notion API"]
-    ALERT["Send Immediate Alerts"]
-
-    %% Scheduling flow
-    SCHED["Scheduling Agent"]
-    GC_API["Tool: Google Calendar API"]
-    REM["Tool: Reminders via<br/>Google Calendar"]
-    SREM["Schedule & Set Reminders"]
-
-    SA -->|Content for Documentation| DA
-    SA -->|Urgent User Actions| AA
-    SA -->|Future Events & Dates| SCHED
-
-    DA --> NOTION_DOC
-    DA --> DIAG
-    NOTION_DOC --> CRS
-    DIAG --> CRS
-
-    AA --> PUSH
-    AA --> NOTION_ACT
-    PUSH --> ALERT
-    NOTION_ACT --> ALERT
-
-    SCHED --> GC_API
-    SCHED --> REM
-    GC_API --> SREM
-    REM --> SREM
-end
-
-PM --> SA
-
-%% =========================
-%% User Delivery Hub
-%% =========================
-subgraph UD["User Delivery Hub"]
-    HUB["User Delivery Hub"]
-    NP["Notion Page"]
-    PN["Push Notification"]
-    CE["Calendar Event"]
-
-    HUB --> NP
-    HUB --> PN
-    HUB --> CE
-end
-
-CRS --> HUB
-ALERT --> HUB
-SREM --> HUB
+    style Input fill:#4a4a4a
+    style Processing fill:#5a5a5a
+    style Semantic fill:#4a4a4a
+    style Action fill:#5a5a5a
+    style Delivery fill:#4a4a4a
