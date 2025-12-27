@@ -29,6 +29,38 @@ Environment variables supported:
 
 Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
 
+## Run (chunk fact extraction, local/free)
+
+For a free LLM setup, run locally with Ollama.
+
+1. Install Ollama and pull a model (example):
+
+```bash
+ollama pull qwen2.5:7b-instruct
+```
+
+2. Extract facts from a transcript text file:
+
+```bash
+set LLM_PROVIDER=ollama
+set OLLAMA_MODEL=qwen2.5:7b-instruct
+python -m agents.chunk_extractor --input path/to/transcript.txt
+```
+
+This writes JSONL records under `.smartmeetos_state/extracted_facts/` by default.
+
+### LangGraph version (parallel fan-out/fan-in)
+
+If you want the pipeline to match the “Parallelization” workflow pattern, you can
+run the LangGraph orchestrated version:
+
+```bash
+pip install -r requirements.txt
+set LLM_PROVIDER=ollama
+set OLLAMA_MODEL=qwen2.5:7b-instruct
+python -m agents.chunk_extractor_graph --input path/to/transcript.txt
+```
+
 ## Architecture (big project)
 
 ```mermaid

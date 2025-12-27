@@ -4,6 +4,9 @@ google-auth-oauthlib>=1.2.1
 python-dateutil>=2.9.0.post0
 requests>=2.32.0
 
+# Agent orchestration
+langgraph>=0.2.0
+
 # App / deployment
 python-dotenv>=1.0.0
 
