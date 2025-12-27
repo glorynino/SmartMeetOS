@@ -1,1 +1,34 @@
 .env
+# Python
+__pycache__/
+*.py[cod]
+*.py,cover
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+.streamlit/secrets.toml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+transcripts/
+logs/
