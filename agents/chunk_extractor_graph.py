@@ -4,6 +4,7 @@ import argparse
 import json
 import operator
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -34,6 +35,8 @@ class GraphState(TypedDict, total=False):
     # and LangGraph merges via operator.add
     extracted: Annotated[list[dict[str, Any]], operator.add]
 
+    max_workers: int
+
     out_dir: str
     out_file: str
 
@@ -53,6 +56,29 @@ def node_extract_one(state: GraphState) -> GraphState:
     meeting_id = state.get("meeting_id")
     record = extract_facts_from_chunk(chunk, meeting_id=meeting_id)
     return {"extracted": [record]}
+
+
+def node_extract_parallel(state: GraphState) -> GraphState:
+    chunks = state.get("chunks", [])
+    meeting_id = state.get("meeting_id")
+
+    # Bounded concurrency to avoid rate-limit storms.
+    max_workers = int(state.get("max_workers", 4))
+    if max_workers <= 0:
+        max_workers = 1
+
+    extracted: list[dict[str, Any]] = []
+    if not chunks:
+        return {"extracted": extracted}
+
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futs = [ex.submit(extract_facts_from_chunk, c, meeting_id=meeting_id) for c in chunks]
+        for fut in as_completed(futs):
+            extracted.append(fut.result())
+
+    # Keep output stable by chunk_id
+    extracted.sort(key=lambda r: int(r.get("chunk_id", 0)))
+    return {"extracted": extracted}
 
 
 def node_write_jsonl(state: GraphState) -> GraphState:
@@ -75,25 +101,13 @@ def build_graph() -> Any:
     g = StateGraph(GraphState)
 
     g.add_node("chunk", node_chunk)
-    g.add_node("extract_one", node_extract_one)
+    g.add_node("extract_parallel", node_extract_parallel)
     g.add_node("write", node_write_jsonl)
 
     g.add_edge(START, "chunk")
 
-    # Fan-out: route each chunk into its own extractor execution.
-    def fan_out(state: GraphState):
-        # Import locally to avoid requiring langgraph types at import time.
-        from langgraph.types import Send
-
-        sends = []
-        for c in state.get("chunks", []):
-            sends.append(Send("extract_one", {"chunk": c, "meeting_id": state.get("meeting_id")}))
-        return sends
-
-    g.add_conditional_edges("chunk", fan_out, ["extract_one"])
-
-    # Fan-in: once all extract_one runs have contributed to `extracted`, continue.
-    g.add_edge("extract_one", "write")
+    g.add_edge("chunk", "extract_parallel")
+    g.add_edge("extract_parallel", "write")
     g.add_edge("write", END)
 
     return g.compile()
@@ -114,6 +128,12 @@ def main(argv: list[str] | None = None) -> int:
         default=str(_default_state_dir() / "extracted_facts"),
         help="Output directory (default: SMARTMEETOS_STATE_DIR/extracted_facts).",
     )
+    p.add_argument(
+        "--max-workers",
+        type=int,
+        default=int(os.environ.get("EXTRACT_MAX_WORKERS", "4")),
+        help="Max parallel chunk extraction workers (default: EXTRACT_MAX_WORKERS or 4).",
+    )
 
     args = p.parse_args(argv)
 
@@ -133,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
             "out_dir": str(Path(args.out_dir)),
             "out_file": out_file_name,
             "extracted": [],
+            "max_workers": args.max_workers,
             "run_at": datetime.now(timezone.utc).isoformat(),
         }
     )

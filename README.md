@@ -49,6 +49,28 @@ python -m agents.chunk_extractor --input path/to/transcript.txt
 
 This writes JSONL records under `.smartmeetos_state/extracted_facts/` by default.
 
+## Run (chunk fact extraction, Groq API / deployed)
+
+If you want this to run in a deployed environment without hosting a model, use Groq.
+
+Set env vars:
+
+```bash
+set LLM_PROVIDER=groq
+set GROQ_API_KEY=your_key
+set GROQ_MODEL=llama-3.1-8b-instant
+```
+
+Run extraction:
+
+```bash
+python -m agents.chunk_extractor --input path/to/transcript.txt
+```
+
+Notes:
+- `llama-3.1-8b-instant` is the default/recommended model for fast chunk extraction.
+- If you hit 429 rate limits, lower parallelism with `set EXTRACT_MAX_WORKERS=2`.
+
 ### LangGraph version (parallel fan-out/fan-in)
 
 If you want the pipeline to match the “Parallelization” workflow pattern, you can
@@ -58,6 +80,16 @@ run the LangGraph orchestrated version:
 pip install -r requirements.txt
 set LLM_PROVIDER=ollama
 set OLLAMA_MODEL=qwen2.5:7b-instruct
+python -m agents.chunk_extractor_graph --input path/to/transcript.txt
+```
+
+For Groq + bounded parallelism:
+
+```bash
+set LLM_PROVIDER=groq
+set GROQ_API_KEY=your_key
+set GROQ_MODEL=llama-3.1-8b-instant
+set EXTRACT_MAX_WORKERS=4
 python -m agents.chunk_extractor_graph --input path/to/transcript.txt
 ```
 
