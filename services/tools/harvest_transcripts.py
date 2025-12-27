@@ -2,16 +2,22 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 from typing import Any, Iterable
+
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from smartmeetos.calendar.google_calendar import utc_now
 from smartmeetos.notetaker.supervisor import save_transcript_if_available
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parent
+    # This file lives at services/tools/*.py
+    return Path(__file__).resolve().parents[2]
 
 
 def _default_results_path() -> Path:
