@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # --- Page Config ---
 st.set_page_config(page_title="SmartMeetOS Test", layout="wide")
-st.title("🔧 SmartMeetOS - Local Connection Test")
+st.title("SmartMeetOS")
 
 # --- Test Database Connection ---
 st.header("1. Database Connection Test")
@@ -38,29 +38,47 @@ for var in env_vars_to_check:
     else:
         st.warning(f"{var}: Not set in environment")
 
-# --- Mock Agent Test ---
-st.header("3. Mock Agent Pipeline")
-if st.button("Simulate Meeting Processing"):
-    with st.spinner("Simulating pipeline..."):
-        # Simulate your processing steps
-        steps = [
-            "Chunking transcript...",
-            "Extracting facts...",
-            "Grouping facts...",
-            "Resolving conflicts...",
-            "Creating Notion summary...",
-            "Sending Discord notification..."
-        ]
+st.header("3. Calendar Watcher (real)")
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+try:
+    from services.runtime_watcher import get_watcher_status, start_watcher, stop_watcher
 
-        for i, step in enumerate(steps):
-            status_text.text(f"Step {i+1}/6: {step}")
-            progress_bar.progress((i + 1) / 6)
-            import time
-            time.sleep(0.5)  # Simulate work
+    status = get_watcher_status()
+    if status.running:
+        st.success(f"Watcher running (pid={status.pid})")
+    else:
+        st.info("Watcher is stopped")
 
-        st.success("✅ Pipeline simulation complete!")
-        st.balloons()
+    with st.form("watcher_form"):
+        calendar_id = st.text_input("Calendar ID", value="primary")
+        poll_seconds = st.number_input("Poll seconds", min_value=5, max_value=300, value=15, step=1)
+        grant_id = st.text_input(
+            "Nylas Grant ID (or set NYLAS_GRANT_ID env var)",
+            value=os.environ.get("NYLAS_GRANT_ID", ""),
+        )
+        enable_nylas = st.checkbox("Enable Nylas Notetaker", value=True)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            start_clicked = st.form_submit_button("Start watcher")
+        with c2:
+            stop_clicked = st.form_submit_button("Stop watcher")
+
+    if start_clicked:
+        st2 = start_watcher(
+            calendar_id=calendar_id.strip() or "primary",
+            poll_seconds=int(poll_seconds),
+            nylas_notetaker=bool(enable_nylas),
+            grant_id=(grant_id.strip() or None),
+        )
+        st.success(f"Started watcher (pid={st2.pid})")
+        st.rerun()
+
+    if stop_clicked:
+        stop_watcher()
+        st.success("Stopped watcher")
+        st.rerun()
+
+except Exception as e:
+    st.error(f"Watcher controls unavailable: {e}")
 
