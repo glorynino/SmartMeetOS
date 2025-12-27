@@ -31,7 +31,7 @@ services:
   - type: cron
     name: smartmeetos-worker
     runtime: python
-    plan: free
+    plan: starter  # Cron jobs require paid plan (minimum: starter)
     buildCommand: pip install -r requirements.txt
     schedule: "*/5 * * * *" # Every 5 minutes
     startCommand: python worker.py
