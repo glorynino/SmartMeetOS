@@ -1,1 +1,0 @@
-"""Documentation agent placeholder."""

@@ -8,6 +8,10 @@ requests>=2.32.0
 # Smart Chunking
 langchain-text-splitters>=0.3.0
 
+# LangChain (LLM tool-calling via Groq-compatible OpenAI endpoint)
+langchain-core>=0.3.0
+langchain-openai>=0.3.0
+
 # Agent Orchestration
 langgraph>=0.2.0
 

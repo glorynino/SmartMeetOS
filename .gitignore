@@ -38,3 +38,6 @@ Thumbs.db
 # Runtime outputs
 transcripts/
 logs/
+
+# Local app state
+.smartmeetos_state/

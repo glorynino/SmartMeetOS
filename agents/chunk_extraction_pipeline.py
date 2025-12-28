@@ -8,7 +8,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-from agents.chunk_extractor_node import extract_facts_from_smart_chunk
+from agents.chunk_extractor_node import (
+    extract_facts_from_smart_chunk_via_langchain_tools,
+)
 from processing.smart_chunker_node import smart_chunk_transcript
 
 
@@ -32,7 +34,7 @@ MEETING_SOURCE_VALUES: dict[str, str] = {
 def run_transcript_to_db_jsonl(
     *,
     transcript_text: str,
-    meeting_id: str | None,
+    meeting_id: str,
     source: str,
     out_dir: Path,
     max_chars: int,
@@ -72,7 +74,7 @@ def run_transcript_to_db_jsonl(
         max_workers = 1
 
     def extract_one(chunk) -> tuple[int, dict[str, Any]]:
-        resp = extract_facts_from_smart_chunk(chunk, meeting_id=meeting_id)
+        resp = extract_facts_from_smart_chunk_via_langchain_tools(chunk, meeting_id=str(meeting_id))
         return chunk.chunk_index, resp
 
     # Collect per-chunk results in parallel.
@@ -117,7 +119,7 @@ def run_transcript_to_db_jsonl(
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Smart Chunker -> Chunk Extractor (Groq) -> DB-shaped JSONL.")
     p.add_argument("--input", required=True, help="Path to a UTF-8 transcript text file.")
-    p.add_argument("--meeting-id", default=None, help="Optional meeting UUID.")
+    p.add_argument("--meeting-id", required=True, help="Meeting UUID (meetings.id). Required for DB inserts.")
     p.add_argument(
         "--source",
         default="google_meet",

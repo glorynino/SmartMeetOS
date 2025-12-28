@@ -6,3 +6,5 @@ This repo's working meeting automation lives under `smartmeetos/`.
 The modules here provide a thin integration layer so the larger app can import a
 stable entrypoint.
 """
+
+from agents.agent_factory import CreatedAgent, create_agent  # noqa: F401

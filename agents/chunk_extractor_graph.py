@@ -12,7 +12,7 @@ from typing import Any, Annotated, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from agents.chunk_extractor_node import extract_facts_from_smart_chunk
+from agents.chunk_extractor_node import extract_facts_from_smart_chunk_via_langchain_tools
 from processing.smart_chunker_node import SmartChunk, smart_chunk_transcript
 
 
@@ -58,6 +58,9 @@ def node_extract_parallel(state: GraphState) -> GraphState:
     chunks = state.get("chunks", [])
     meeting_id = state.get("meeting_id")
 
+    if not meeting_id:
+        raise ValueError("meeting_id is required for DB inserts (tool-calling extractor).")
+
     # Bounded concurrency to avoid rate-limit storms.
     max_workers = int(state.get("max_workers", 4))
     if max_workers <= 0:
@@ -68,7 +71,7 @@ def node_extract_parallel(state: GraphState) -> GraphState:
         return {"extracted": extracted}
 
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        futs = [ex.submit(extract_facts_from_smart_chunk, c, meeting_id=meeting_id) for c in chunks]
+        futs = [ex.submit(extract_facts_from_smart_chunk_via_langchain_tools, c, meeting_id=meeting_id) for c in chunks]
         for fut in as_completed(futs):
             extracted.append(fut.result())
 
@@ -135,7 +138,7 @@ def _default_state_dir() -> Path:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="LangGraph pipeline: chunk -> parallel extract -> write JSONL.")
     p.add_argument("--input", required=True, help="Path to a UTF-8 transcript text file.")
-    p.add_argument("--meeting-id", default=None, help="Optional meeting id.")
+    p.add_argument("--meeting-id", required=True, help="Meeting UUID (meetings.id). Required for DB inserts.")
     p.add_argument(
         "--source",
         default="Google Meet",

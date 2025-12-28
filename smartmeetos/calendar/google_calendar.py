@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import base64
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -108,6 +109,19 @@ def get_credentials(
         token_file.parent.mkdir(parents=True, exist_ok=True)
         token_file.write_text(creds.to_json(), encoding="utf-8")
         return creds
+
+    non_interactive = str(os.environ.get("SMARTMEETOS_NONINTERACTIVE", "")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    } or bool(os.environ.get("RENDER_SERVICE_ID"))
+
+    if non_interactive:
+        raise RuntimeError(
+            "No valid Google OAuth credentials available in a non-interactive environment. "
+            "Provide a refreshable token via GOOGLE_TOKEN_JSON/GOOGLE_TOKEN_B64 (or mount a token file) "
+            "so the app can authenticate without opening a browser."
+        )
 
     flow = InstalledAppFlow.from_client_secrets_file(str(client_secret_file), scopes=list(scopes))
 
@@ -247,11 +261,44 @@ def parse_minutes(value: str) -> int:
 
 
 def default_paths() -> tuple[Path, Path]:
-    # Keep secrets out of git: user should place client_secret.json in ./secrets
+    """Resolve default OAuth file paths.
+
+    Local dev can still use ./secrets/client_secret.json and ./.secrets/google_token.json.
+    For deployment (Render), prefer env vars so no repo-local files are required:
+    - GOOGLE_CLIENT_SECRET_JSON or GOOGLE_CLIENT_SECRET_B64
+    - GOOGLE_TOKEN_JSON or GOOGLE_TOKEN_B64
+    - SMARTMEETOS_STATE_DIR to control where runtime state is stored
+    """
+
     repo_root = Path(__file__).resolve().parents[2]
+    state_dir = Path(os.environ.get("SMARTMEETOS_STATE_DIR", str(repo_root / ".smartmeetos_state"))).resolve()
+    state_dir.mkdir(parents=True, exist_ok=True)
 
-    client_secret_env = os.environ.get("GOOGLE_CLIENT_SECRET_FILE")
-    client_secret_file = Path(client_secret_env) if client_secret_env else repo_root / "secrets" / "client_secret.json"
+    # Client secret: env -> file (state dir) -> GOOGLE_CLIENT_SECRET_FILE -> repo secrets path
+    client_secret_file = state_dir / "google_client_secret.json"
+    client_secret_json = os.environ.get("GOOGLE_CLIENT_SECRET_JSON")
+    client_secret_b64 = os.environ.get("GOOGLE_CLIENT_SECRET_B64")
+    if client_secret_json:
+        client_secret_file.write_text(client_secret_json, encoding="utf-8")
+    elif client_secret_b64:
+        client_secret_file.write_text(base64.b64decode(client_secret_b64).decode("utf-8"), encoding="utf-8")
+    else:
+        client_secret_env = os.environ.get("GOOGLE_CLIENT_SECRET_FILE")
+        if client_secret_env:
+            client_secret_file = Path(client_secret_env)
+        else:
+            client_secret_file = repo_root / "secrets" / "client_secret.json"
 
-    token_file = repo_root / ".secrets" / "google_token.json"
+    # Token: env -> file (state dir) -> repo .secrets path (local default)
+    token_file = state_dir / "google_token.json"
+    token_json = os.environ.get("GOOGLE_TOKEN_JSON")
+    token_b64 = os.environ.get("GOOGLE_TOKEN_B64")
+    if token_json:
+        token_file.write_text(token_json, encoding="utf-8")
+    elif token_b64:
+        token_file.write_text(base64.b64decode(token_b64).decode("utf-8"), encoding="utf-8")
+    else:
+        # Local default for backwards compatibility
+        token_file = repo_root / ".secrets" / "google_token.json"
+
     return client_secret_file, token_file

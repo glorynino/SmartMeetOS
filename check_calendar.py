@@ -24,6 +24,7 @@ from smartmeetos.notetaker.supervisor import SupervisorConfig, supervise_meeting
 from smartmeetos.notetaker.transcript_merge import merge_transcripts_for_meeting
 
 from agents.chunk_extraction_pipeline import MEETING_SOURCE_VALUES, run_transcript_to_db_jsonl
+from agents.group_and_aggregate_graph import run_extracted_facts_to_inputs_jsonl_graph
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -66,6 +67,25 @@ def build_parser() -> argparse.ArgumentParser:
         "--nylas-notetaker",
         action="store_true",
         help="Create a Nylas Notetaker when a meeting is triggered (requires NYLAS_API_KEY)",
+    )
+
+    # Post-run grouping/aggregation (after extraction)
+    p.add_argument(
+        "--aggregate-inputs",
+        action="store_true",
+        help="After extraction, label facts with group_label and write aggregated Inputs JSONL (requires GROQ_API_KEY)",
+    )
+    p.add_argument(
+        "--grouping-max-facts-per-call",
+        type=int,
+        default=int(os.environ.get("GROUPING_MAX_FACTS_PER_CALL", "30")),
+        help="Facts per grouping LLM call (default: GROUPING_MAX_FACTS_PER_CALL or 30)",
+    )
+    p.add_argument(
+        "--agg-max-workers",
+        type=int,
+        default=int(os.environ.get("AGG_MAX_WORKERS", "4")),
+        help="Parallel aggregation workers (default: AGG_MAX_WORKERS or 4)",
     )
     p.add_argument(
         "--nylas-api-key",
@@ -174,16 +194,20 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _state_dir() -> Path:
+    return Path(os.environ.get("SMARTMEETOS_STATE_DIR", ".smartmeetos_state")).resolve()
+
+
 def _trigger_state_path() -> Path:
-    return Path(__file__).resolve().parent / ".secrets" / "trigger_state.json"
+    return _state_dir() / "trigger_state.json"
 
 
 def _meeting_results_path() -> Path:
-    return Path(__file__).resolve().parent / ".secrets" / "meeting_results.json"
+    return _state_dir() / "meeting_results.json"
 
 
 def _transcripts_dir() -> Path:
-    return Path(__file__).resolve().parent / ".secrets" / "transcripts"
+    return _state_dir() / "transcripts"
 
 
 def _load_meeting_results(path: Path) -> dict[str, Any]:
@@ -613,6 +637,17 @@ def run_once(args: argparse.Namespace) -> int:
                 )
                 print(f"  EXTRACT: transcript_chunks -> {transcript_chunks_path}")
                 print(f"  EXTRACT: extracted_facts   -> {extracted_facts_path}")
+
+                if args.aggregate_inputs:
+                    labeled_facts_path, inputs_path = run_extracted_facts_to_inputs_jsonl_graph(
+                        extracted_facts_path=Path(extracted_facts_path),
+                        out_dir=(out_dir if out_dir is not None else (_state_dir() / "db_jsonl")),
+                        meeting_id=chosen_ev.id,
+                        max_facts_per_call=int(args.grouping_max_facts_per_call),
+                        max_workers=int(args.agg_max_workers),
+                    )
+                    print(f"  GROUP: extracted_facts_labeled -> {labeled_facts_path}")
+                    print(f"  AGG:   inputs              -> {inputs_path}")
 
         print("")
 

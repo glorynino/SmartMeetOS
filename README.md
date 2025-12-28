@@ -29,6 +29,31 @@ Environment variables supported:
 
 Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
 
+## Deployment (Render + Supabase)
+
+This repo is designed to run on Render and store data in Supabase (Postgres). No Docker required.
+
+Key deployment requirements:
+
+- Set `DATABASE_URL` to your Supabase Postgres connection string.
+- Set `SMARTMEETOS_STATE_DIR` to a persistent path (recommended: Render persistent disk mount).
+- Google OAuth must be **non-interactive** on Render (no browser). Provide a refreshable token via env vars.
+
+Recommended environment variables (see `.env.example`):
+
+- `DATABASE_URL`
+- `SMARTMEETOS_STATE_DIR`
+- `GROQ_API_KEY`
+- `NYLAS_API_KEY`, `NYLAS_GRANT_ID`
+- `GOOGLE_CLIENT_SECRET_JSON` (or `GOOGLE_CLIENT_SECRET_B64`)
+- `GOOGLE_TOKEN_JSON` (or `GOOGLE_TOKEN_B64`)
+- `SMARTMEETOS_NONINTERACTIVE=1`
+
+Notes on Google OAuth:
+
+- The code uses the Installed App flow locally (opens a browser) if credentials are missing.
+- In production (Render), set `SMARTMEETOS_NONINTERACTIVE=1` and provide `GOOGLE_TOKEN_JSON`/`GOOGLE_TOKEN_B64`.
+
 ## Run (chunk fact extraction, Groq API)
 
 Chunk extraction uses Groq (API-based LLM). This works locally and in a deployed environment.
@@ -40,11 +65,7 @@ set GROQ_API_KEY=your_key
 set GROQ_MODEL=llama-3.1-8b-instant
 ```
 
-Run extraction:
-
-```bash
-python -m agents.chunk_extractor --input path/to/transcript.txt
-```
+Extraction is typically run via `check_calendar.py --extract-facts` after a meeting completes.
 
 Notes:
 
@@ -56,12 +77,7 @@ Notes:
 If you want the pipeline to match the “Parallelization” workflow pattern, you can
 run the LangGraph orchestrated version:
 
-```bash
-set GROQ_API_KEY=your_key
-set GROQ_MODEL=llama-3.1-8b-instant
-set EXTRACT_MAX_WORKERS=4
-python -m agents.chunk_extractor_graph --input path/to/transcript.txt
-```
+The grouping/aggregation step is implemented in `agents/group_and_aggregate_graph.py`.
 
 ## Architecture (big project)
 
