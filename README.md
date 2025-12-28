@@ -1,35 +1,178 @@
 # SmartMeetOS
 
-SmartMeetOS watches Google Calendar for Google Meet events and triggers a Nylas Notetaker workflow to join meetings and save transcripts.
+SmartMeetOS watches Google Calendar for Google Meet events and triggers a Nylas Notetaker workflow to join meetings and save transcripts. It automatically extracts meeting insights, creates documentation, schedules follow-ups, and delivers results via Discord, Notion, or email.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Project Structure](#project-structure)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Setup Guides](#setup-guides)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## Features
+
+✨ **Core Capabilities:**
+
+- 🗓️ **Calendar Monitoring** - Real-time Google Calendar polling for Meet events
+- 📝 **Automatic Transcription** - Nylas Notetaker joins meetings and transcribes conversations
+- 🧠 **AI Processing** - LLM-powered extraction of facts, decisions, and action items
+- 📊 **Semantic Grouping** - Intelligent clustering and conflict resolution of extracted data
+- 📄 **Auto-Documentation** - Generate meeting summaries and documents in Notion
+- ⚡ **Task Management** - Automatic scheduling of follow-ups and action items
+- 💬 **Multi-Channel Delivery** - Send results via Discord, email, SMS, or Notion
+- 🔄 **Webhook Integration** - Real-time updates via Nylas webhooks
+- 🗄️ **Meeting History** - SQLAlchemy-based database for tracking all meetings
 
 ## Requirements
 
-- Python 3.10+ recommended
-- Google Calendar OAuth client JSON in `secrets/` (ignored by git)
-- Nylas API key + grant id for Notetaker
+- **Python 3.10+** (recommended 3.11+)
+- **Google Calendar OAuth** - Client credentials JSON in `secrets/`
+- **Nylas API Account** - API key and grant ID for Notetaker
+- **SQLite or PostgreSQL** - For meeting and extraction history
 
-Install dependencies:
+## Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/glorynino/SmartMeetOS.git
+cd SmartMeetOS
+```
+
+2. Create a Python virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Run (calendar watcher)
+4. Set up your `.env` file (see [Configuration](#configuration) below)
 
-Use `check_calendar.py` as the main entrypoint:
+## Configuration
 
-```bash
-python check_calendar.py --nylas-notetaker --nylas-grant-id <GRANT_ID>
-```
+Create a `.env` file at the project root with the following variables:
 
-Environment variables supported:
+### Required Variables
 
-- `NYLAS_API_KEY`
-- `NYLAS_API_BASE` (optional)
+- `NYLAS_API_KEY` - Your Nylas API key (from Nylas Dashboard)
+- `NYLAS_GRANT_ID` - Grant ID obtained after Nylas authentication
+- `GOOGLE_CLIENT_SECRET_FILE` - Path to Google OAuth credentials JSON (e.g., `secrets/google_credentials.json`)
+- `NYLAS_WEBHOOK_SECRET` - Secret for Nylas webhook verification
+
+### Optional Variables
+
+- `NYLAS_API_BASE` - Nylas API base URL (default: `https://api.us.nylas.com`)
+- `DISCORD_TOKEN` - Discord bot token for notifications
+- `SMS_TO_API_KEY` - SMS provider API key (for SMS notifications)
+- `MISTRAL_API_KEY` - Mistral AI API key for LLM processing
+- `DATABASE_URL` - Database connection URL (default: SQLite local database)
 
 Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
 
-## Architecture 
+## Project Structure
+
+```
+SmartMeetOS/
+├── check_calendar.py          # Main entry point - calendar watcher
+├── requirements.txt           # Python dependencies
+├── agents/                    # Multi-agent orchestration
+│   ├── orchestrator.py       # Orchestrates all agents
+│   ├── event_detection_agent.py  # Detects meeting events
+│   ├── actions.py            # Executes action items
+│   ├── documentation.py      # Generates documentation
+│   └── scheduling.py         # Handles scheduling logic
+├── smartmeetos/              # Core application
+│   ├── calendar/            # Google Calendar integration
+│   ├── notetaker/           # Nylas Notetaker integration
+│   │   ├── nylas_notetaker.py
+│   │   ├── supervisor.py    # Supervises meeting joins
+│   │   └── failure_codes.py
+│   └── webapp/              # Streamlit dashboard
+├── services/                # External API integrations
+│   ├── calendar_client.py
+│   ├── discord_client.py
+│   ├── nylas_client.py
+│   ├── notion_client.py
+│   └── tools/              # Utility tools
+├── database/               # Database models & migrations
+│   ├── models.py
+│   ├── connection.py
+│   └── init_db.py
+├── processing/            # Data processing
+│   └── chunker.py        # Smart transcript chunking
+├── Action_agent/          # Legacy action agents
+├── docs/                 # Setup & documentation guides
+│   ├── google_calendar_setup.md
+│   ├── nylas_notetaker_setup.md
+│   ├── nylas_webhooks.md
+│   └── meeting_joining_reliability.md
+└── scheduling-agent/     # Dedicated scheduling agent
+```
+
+## Usage
+
+### 1. Calendar Watcher (Main Process)
+
+Start the calendar watcher to continuously monitor for Google Meet events:
+
+```bash
+python check_calendar.py \
+  --nylas-notetaker \
+  --nylas-grant-id <GRANT_ID> \
+  --calendar primary \
+  --window-minutes 120 \
+  --poll-seconds 15
+```
+
+**Options:**
+
+- `--nylas-notetaker` - Enable Nylas Notetaker integration
+- `--nylas-grant-id` - Nylas grant ID (or set `NYLAS_GRANT_ID` env var)
+- `--calendar` - Calendar ID to monitor (default: `primary`)
+- `--window-minutes` - Look-ahead window in minutes (default: 120)
+- `--poll-seconds` - Poll interval in seconds (default: 60)
+- `--dry-run` - Preview actions without executing
+- `--list-calendars` - List available calendars and exit
+
+### 2. Dashboard (Streamlit Web UI)
+
+Start the interactive dashboard:
+
+```bash
+streamlit run webapp/app.py
+```
+
+Access at `http://localhost:8501`
+
+### 3. Manual Meeting Processing
+
+Process a specific meeting:
+
+```bash
+python -c "
+from agents.orchestrator import start_calendar_watcher
+watcher = start_calendar_watcher(
+    calendar_id='primary',
+    nylas_notetaker=True,
+    grant_id='<GRANT_ID>'
+)
+print(f'Watcher running with PID: {watcher.pid}')
+"
+```
+
+## Architecture
 
 ```mermaid
 graph TB
