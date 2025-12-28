@@ -1,19 +1,35 @@
 # SmartMeetOS
 
-**SmartMeetOS** is an agentic system that turns meetings into actions by transcribing conversations, reasoning over decisions, and autonomously executing follow-ups using connected tools.
+SmartMeetOS watches Google Calendar for Google Meet events and triggers a Nylas Notetaker workflow to join meetings and save transcripts.
 
----
+## Requirements
 
-## 🧠 What it does
-- Automatically joins scheduled meetings
-- Transcribes audio and captures chat/messages
-- Reasons over discussions to extract decisions, action items, and deadlines
-- Executes actions autonomously (tasks, notifications, calendar updates)
-- Tracks outcomes and prepares concise summaries for the next meeting
+- Python 3.10+ recommended
+- Google Calendar OAuth client JSON in `secrets/` (ignored by git)
+- Nylas API key + grant id for Notetaker
 
----
+Install dependencies:
 
-## 🏗️ Architecture Overview
+```bash
+pip install -r requirements.txt
+```
+
+## Run (calendar watcher)
+
+Use `check_calendar.py` as the main entrypoint:
+
+```bash
+python check_calendar.py --nylas-notetaker --nylas-grant-id <GRANT_ID>
+```
+
+Environment variables supported:
+
+- `NYLAS_API_KEY`
+- `NYLAS_API_BASE` (optional)
+
+Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
+
+## Architecture 
 
 ```mermaid
 graph TB
@@ -35,7 +51,7 @@ graph TB
         J[Chunk Extractor LLM Node]
         K[...]
         L[(extracted_facts<br/>group_label: NULL)]
-        
+
         C --> D
         D --> E
         E -->|Splits into| F
@@ -56,7 +72,7 @@ graph TB
         P[Aggregator LLM Node<br/>for Group B]
         Q[...]
         R[(meeting_inputs table)]
-        
+
         L --> M
         L -->|Labels facts with<br/>group_label| N
         M -->|Routes each group| O
@@ -79,7 +95,7 @@ graph TB
         Z[(document_outputs)]
         AA[(tasks)]
         AB[(calendar_events)]
-        
+
         R --> S
         S -->|Routes by intent| T
         S -->|Routes by intent| U
@@ -104,3 +120,4 @@ graph TB
     style Semantic fill:#4a4a4a
     style Action fill:#5a5a5a
     style Delivery fill:#4a4a4a
+```
