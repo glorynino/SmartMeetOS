@@ -1,8 +1,9 @@
 from sqlalchemy import Column, String, DateTime, Integer, Text, ForeignKey, Enum, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from .connection import Base
 
 class MeetingSource(enum.Enum):
@@ -52,7 +53,7 @@ class User(Base):
     notion_url = Column(Text)
     discord_id = Column(String(100))
     phone_number = Column(String(20))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 class Meeting(Base):
     __tablename__ = 'meetings'
@@ -64,14 +65,14 @@ class Meeting(Base):
     transcript_url = Column(Text)
     status = Column(Enum(ProcessingStatus), default=ProcessingStatus.pending)
     source = Column(Enum(MeetingSource))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 class TranscriptChunk(Base):
     __tablename__ = 'transcript_chunks'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     meeting_id = Column(UUID(as_uuid=True), ForeignKey('meetings.id'))
     chunk_index = Column(Integer, nullable=False)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=datetime.now(timezone.utc))
     speaker = Column(String(255))
     chunk_content = Column(Text, nullable=False)
     source = Column(Enum(MeetingSource))
@@ -87,7 +88,7 @@ class ExtractedFact(Base):
     fact_content = Column(Text, nullable=False)
     certainty = Column(Integer, default=70)
     group_label = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class Inputs(Base):
@@ -95,8 +96,7 @@ class Inputs(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     meeting_id = Column(UUID(as_uuid=True), ForeignKey('meetings.id'))
     input_content = Column(Text)
-    group_label = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 class DocumentOutput(Base):
     __tablename__ = 'document_outputs'
@@ -105,7 +105,7 @@ class DocumentOutput(Base):
     agent = Column(String(100))
     document_type = Column(Enum(DocumentType), nullable=False)
     doc_content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 class Task(Base):
     __tablename__ = 'tasks'
@@ -115,7 +115,7 @@ class Task(Base):
     description = Column(Text)
     due_date = Column(DateTime)
     urgency = Column(Enum(Urgency), default=Urgency.medium)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 class CalendarEvent(Base):
     __tablename__ = 'calendar_events'
@@ -126,4 +126,33 @@ class CalendarEvent(Base):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     reminder_policy = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+
+class GoogleOAuthToken(Base):
+    __tablename__ = 'google_oauth_tokens'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    token_json = Column(Text, nullable=False)
+    email = Column(String(255))
+    calendar_id = Column(String(255), default='primary')
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+
+    user = relationship("User", backref="google_tokens")
+
+
+
+
+class ServiceState(Base):
+    __tablename__ = 'service_states'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    service_name = Column(String(100), nullable=False, unique=True)  #'calendar_monitor'
+    state_json = Column(Text)  #JSON for trigger_state, active_lock, etc.
+    last_run = Column(DateTime)
+    is_running = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
