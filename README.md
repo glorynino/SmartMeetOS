@@ -264,3 +264,44 @@ graph TB
     style Action fill:#5a5a5a
     style Delivery fill:#4a4a4a
 ```
+
+### Explication du diagramme
+
+- **Input & Storage :**
+
+  - Sources : webhooks Nylas (transcripts) et fichiers bruts de transcription.
+  - Stockage initial : table `meetings` (transcripts bruts, métadonnées).
+  - Rôle : centraliser l'entrée brute pour traitement asynchrone.
+
+- **Processing — Chunking & Parallel Fact Extraction :**
+
+  - Découpage des transcriptions en « chunks » (Smart Chunker) pour respecter les limites de tokens.
+  - Chaque chunk est envoyé à des nœuds d'extraction LLM qui extraient faits, décisions, tâches.
+  - Résultat stocké dans `extracted_facts` (champ `group_label` initialement NULL).
+  - Avantage : parallélisme, robustesse sur longues réunions.
+
+- **Semantic Grouping & Conflict Resolution :**
+
+  - Agrégateur/Router regroupe les `extracted_facts` par contexte/sujet/participants.
+  - Pour chaque groupe, un LLM d'agrégation fusionne les éléments et résout les conflits.
+  - Produit une représentation finale stockée (ex. `meeting_inputs` / `resolved_context`).
+
+- **Action Orchestration :**
+
+  - Le Supervisor/Router prend les `meeting_inputs` et route selon l'intent vers :
+    - `Documentation Agent` → publie vers Notion / génère documents (`document_outputs`).
+    - `Action Agent` → envoie notifications (Discord/SMS), crée tâches (`tasks`).
+    - `Scheduling Agent` → planifie événements dans Google Calendar (`calendar_events`).
+  - Intégrations externes (Notion, Discord/Twilio, Google Calendar) reçoivent les objets produits.
+
+- **Delivery (User Delivery) :**
+  - Les outputs finaux (documents, tâches, événements) sont livrés via les canaux choisis.
+  - Historique et traces persistantes dans la DB pour audit et réutilisation.
+
+**Points opérationnels & fichiers clés :**
+
+- Vérification webhook Nylas : variable `NYLAS_WEBHOOK_SECRET`.
+- Google OAuth : fichier pointé par `GOOGLE_CLIENT_SECRET_FILE`.
+- État runtime (tokens, logs, médias) : dossier `.secrets/`.
+- Supervisor & codes d'échec : `smartmeetos/notetaker/supervisor.py`, `failure_codes.py`.
+- Tables importantes : `meetings`, `extracted_facts`, `meeting_inputs`, `document_outputs`, `tasks`, `calendar_events`.
