@@ -11,9 +11,7 @@ SmartMeetOS watches Google Calendar for Google Meet events and triggers a Nylas 
 - [Project Structure](#project-structure)
 - [Usage](#usage)
 - [Architecture](#architecture)
-- [Setup Guides](#setup-guides)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+- [explication of diagram](#Architecture diagram — explanation)
 
 ## Features
 
