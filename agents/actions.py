@@ -62,7 +62,7 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-STUDENT_ID = 714920350575493130
+# STUDENT_ID = tu m'es L'id de la personne que tu veux notifier
 
 # État global Discord (typé correctement)
 discord_client_instance: Optional[DiscordClient] = None
