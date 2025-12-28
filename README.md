@@ -194,6 +194,89 @@ watcher = start_calendar_watcher(
 
 ### Architecture Diagram
 
+````mermaid
+graph TB
+    subgraph Input["Input & Storage"]
+        A[Nylas Webhook]
+        B[Raw Transcript]
+        C[(meetings table)]
+        A --> B
+        B --> C
+    end
+
+    subgraph Processing["Chunking & Parallel Fact Extraction"]
+        D{Processing Pipeline}
+        E[Smart Chunker Node]
+        F[Chunk 1]
+        G[Chunk 2]
+        H[...]
+        I[Chunk Extractor LLM Node]
+        J[Chunk Extractor LLM Node]
+        K[...]
+        L[(extracted_facts
+ group_label: NULL)]
+
+        C --> D
+        D --> E
+        E -->|Splits into| F
+        E -->|Splits into| G
+        E -->|Splits into| H
+        F --> I
+        G --> J
+        H --> K
+        I -->|Creates| L
+        J -->|Creates| L
+        K -->|Creates| L
+    end
+
+    subgraph Semantic["Semantic Grouping & Conflict Resolution"]
+        M{Aggregator Router}
+        N[Grouping Node]
+        O[Aggregator LLM Node
+ Group A]
+        P[Aggregator LLM Node
+ Group B]
+        Q[...]
+        R[(meeting_inputs table)]
+
+        L --> M
+        L -->|Labels facts| N
+        M -->|Routes each group| O
+        M -->|Routes each group| P
+        M -->|Routes each group| Q
+        N -->|Clusters by context| N
+        O -->|Writes resolved context| R
+        P -->|Writes resolved context| R
+        Q -->|Writes resolved context| R
+    end
+
+    subgraph Action["Action Orchestration"]
+        S[Supervisor / Router]
+        T[Documentation Agent]
+        U[Action Agent]
+        V[Scheduling Agent]
+        W[Notion API]
+        X[Discord / Twilio API]
+        Y[Google Calendar API]
+        Z[(document_outputs)]
+        AA[(tasks)]
+        AB[(calendar_events)]
+
+        R --> S
+        S -->|Routes by intent| T
+        S -->|Routes by intent| U
+        S -->|Routes by intent| V
+        T --> W --> Z
+        U --> X --> AA
+        V --> Y --> AB
+    end
+
+    subgraph Delivery["User Delivery"]
+        AC[User]
+        Z --> AC
+        AA --> AC
+        AB --> AC
+    end
 ```mermaid
 graph TB
     subgraph Input[Input & Storage]
@@ -224,17 +307,89 @@ graph TB
         J --> L[Action Agent]
         J --> M[Scheduling Agent]
     end
-```
+````
 
 ---
 
 ### Architecture Diagram — Explanation
 
-* **Input & Storage**: Nylas webhooks deliver transcripts stored in `meetings`.
-* **Processing**: Transcripts are chunked and processed in parallel by LLMs.
-* **Semantic Layer**: Extracted facts are grouped and conflicts resolved.
-* **Action Layer**: Supervisor routes outputs to documentation, actions, or scheduling agents.
-* **Delivery**: Results are sent to Notion, Discord, SMS, or Calendar.
+This architecture is designed as a **multi-stage, event-driven pipeline** that transforms raw meeting data into structured knowledge and automated actions.
+
+---
+
+#### 1. Input & Storage
+
+This layer is responsible for **ingesting and persisting raw data**.
+
+* **Nylas Webhook** notifies the system when a meeting transcript is available.
+* **Raw Transcript** represents the unprocessed meeting conversation.
+* The **`meetings` table** stores transcripts along with metadata (meeting ID, participants, timestamps).
+
+This separation ensures raw data is always preserved and can be reprocessed if needed.
+
+---
+
+#### 2. Processing — Chunking & Parallel Fact Extraction
+
+Meeting transcripts can be long and exceed LLM context limits.
+
+* The **Smart Chunker Node** splits transcripts into smaller, context-aware chunks.
+* Each chunk is processed independently by **Extractor LLM Nodes**.
+* These nodes extract atomic elements such as:
+
+  * facts
+  * decisions
+  * action items
+* All extracted elements are stored in **`extracted_facts`** with `group_label = NULL`.
+
+This design enables **parallelism**, scalability, and fault tolerance.
+
+---
+
+#### 3. Semantic Grouping & Conflict Resolution
+
+Raw extracted facts are often fragmented or redundant.
+
+* The **Grouping Node** analyzes ungrouped facts and assigns semantic labels based on topic, intent, or participants.
+* The **Aggregator Router** routes each labeled group to a dedicated **Aggregator LLM Node**.
+* Each aggregator:
+
+  * merges related facts
+  * resolves contradictions
+  * produces a coherent representation
+* Final, resolved context is stored in **`meeting_inputs`**.
+
+This layer converts fragmented information into **consistent, high-level understanding**.
+
+---
+
+#### 4. Action Orchestration
+
+This layer decides **what to do** with the resolved meeting context.
+
+* The **Supervisor / Router** analyzes `meeting_inputs` and infers user intent.
+* Based on intent, it dispatches data to specialized agents:
+
+  * **Documentation Agent** → creates structured documents in Notion
+  * **Action Agent** → sends notifications or creates tasks (Discord, SMS)
+  * **Scheduling Agent** → schedules or updates events in Google Calendar
+
+Outputs are persisted in:
+
+* `document_outputs`
+* `tasks`
+* `calendar_events`
+
+---
+
+#### 5. Delivery — User-Facing Outputs
+
+The final layer delivers value to the user.
+
+* Documents, tasks, and calendar events are delivered through configured channels.
+* All outputs remain stored for auditing, history, and reuse.
+
+This separation allows SmartMeetOS to scale delivery mechanisms without changing core logic.
 
 ---
 
