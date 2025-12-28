@@ -1,31 +1,37 @@
-from calendar_tools import (
-    create_calendar_event,
-    add_homework_event,
-    delete_event,
-    reschedule_event
-)
-from agent import llm_with_tools, SYSTEM_PROMPT
+from agent import llm, SYSTEM_PROMPT, TOOLS
 from langchain_core.messages import SystemMessage, HumanMessage
 
 PROMPT = """
-décale le meeting intitulé Cours d’algèbre de 10:00 à 12:00,
+Crée un meeting intitulé Cours d’algèbre le 28 janvier 2025 de 09:00 à 11:00,
+puis décale-le de 10:00 à 12:00,
+et ajoute un devoir d’algèbre pour le 30 janvier à 18:00.
 """
 
-response = llm_with_tools.invoke([
+messages = [
     SystemMessage(content=SYSTEM_PROMPT),
     HumanMessage(content=PROMPT)
-])
-for tool_call in response.tool_calls:
-    tool_name = tool_call["name"]
-    tool_args = tool_call["args"]
+]
 
-    # Mapper le nom vers la vraie fonction
-    tool_map = {
-        "create_calendar_event": create_calendar_event,
-        "add_homework_event": add_homework_event,
-        "delete_event": delete_event,
-        "reschedule_event": reschedule_event,
-    }
+response = llm.invoke(messages)
 
-    result = tool_map[tool_name].invoke(tool_args)
-    print("✅ TOOL EXECUTED:", result)
+tool_map = {tool.name: tool for tool in TOOLS}
+last_event_id = None
+
+if response.tool_calls:
+    for call in response.tool_calls:
+        tool_name = call["name"]
+        args = call["args"]
+
+        if tool_name == "reschedule_event":
+            args["event_id"] = last_event_id
+
+        print(f"\n➡️ TOOL: {tool_name}")
+        print("ARGS:", args)
+
+        result = tool_map[tool_name].invoke(args)
+        print("✅ RESULT:", result)
+
+        if tool_name == "create_calendar_event":
+            last_event_id = result["event_id"]
+else:
+    print("ℹ️ Aucun tool appelé")

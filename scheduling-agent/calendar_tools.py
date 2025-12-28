@@ -66,21 +66,36 @@ def delete_event(event_id: str):
 def reschedule_event(
     event_id: str,
     new_start: str,
-    new_end: str
+    new_end: str,
+    timezone: str = "Africa/Algiers"
 ):
-    """Décaler un événement Google Calendar."""
+    """
+    Décale un événement Google Calendar existant.
+    """
+    service = get_calendar_service()
+
     event = service.events().get(
         calendarId="primary",
         eventId=event_id
     ).execute()
 
-    event["start"]["dateTime"] = new_start
-    event["end"]["dateTime"] = new_end
+    event["start"] = {
+        "dateTime": new_start,
+        "timeZone": timezone
+    }
+    event["end"] = {
+        "dateTime": new_end,
+        "timeZone": timezone
+    }
 
-    service.events().update(
+    updated = service.events().update(
         calendarId="primary",
         eventId=event_id,
         body=event
     ).execute()
 
-    return {"status": "updated"}
+    return {
+        "status": "rescheduled",
+        "event_id": updated["id"],
+        "link": updated["htmlLink"]
+    }

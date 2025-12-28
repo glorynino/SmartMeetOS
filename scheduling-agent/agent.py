@@ -8,14 +8,9 @@ from calendar_tools import (
 
 SYSTEM_PROMPT = """
 Tu es un Scheduling Agent.
-Analyse la demande utilisateur et appelle les tools appropriés
-pour gérer Google Calendar.
+Analyse la demande utilisateur.
+Choisis les tools appropriés et appelle-les.
 """
-
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0
-)
 
 TOOLS = [
     create_calendar_event,
@@ -24,4 +19,7 @@ TOOLS = [
     reschedule_event
 ]
 
-llm_with_tools = llm.bind_tools(TOOLS)
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0
+).bind_tools(TOOLS)   # ✅ ICI
