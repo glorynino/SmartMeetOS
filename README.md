@@ -196,117 +196,103 @@ watcher = start_calendar_watcher(
 
 ````mermaid
 graph TB
-    subgraph Input["Input & Storage"]
-        A[Nylas Webhook]
-        B[Raw Transcript]
-        C[(meetings table)]
-        A --> B
-        B --> C
-    end
+subgraph Input["Input & Storage"]
+A[Nylas Webhook]
+B[Raw Transcript]
+C[(meetings table)]
+A --> B
+B --> C
+end
 
-    subgraph Processing["Chunking & Parallel Fact Extraction"]
-        D{Processing Pipeline}
-        E[Smart Chunker Node]
-        F[Chunk 1]
-        G[Chunk 2]
-        H[...]
-        I[Chunk Extractor LLM Node]
-        J[Chunk Extractor LLM Node]
-        K[...]
-        L[(extracted_facts
- group_label: NULL)]
 
-        C --> D
-        D --> E
-        E -->|Splits into| F
-        E -->|Splits into| G
-        E -->|Splits into| H
-        F --> I
-        G --> J
-        H --> K
-        I -->|Creates| L
-        J -->|Creates| L
-        K -->|Creates| L
-    end
+subgraph Processing["Chunking & Parallel Fact Extraction"]
+D{Processing Pipeline}
+E[Smart Chunker Node]
+F[Chunk 1]
+G[Chunk 2]
+H[...]
+I[Chunk Extractor LLM Node]
+J[Chunk Extractor LLM Node]
+K[...]
+L[(extracted_facts
+group_label: NULL)]
 
-    subgraph Semantic["Semantic Grouping & Conflict Resolution"]
-        M{Aggregator Router}
-        N[Grouping Node]
-        O[Aggregator LLM Node
- Group A]
-        P[Aggregator LLM Node
- Group B]
-        Q[...]
-        R[(meeting_inputs table)]
 
-        L --> M
-        L -->|Labels facts| N
-        M -->|Routes each group| O
-        M -->|Routes each group| P
-        M -->|Routes each group| Q
-        N -->|Clusters by context| N
-        O -->|Writes resolved context| R
-        P -->|Writes resolved context| R
-        Q -->|Writes resolved context| R
-    end
+C --> D
+D --> E
+E -->|Splits into| F
+E -->|Splits into| G
+E -->|Splits into| H
+F --> I
+G --> J
+H --> K
+I -->|Creates| L
+J -->|Creates| L
+K -->|Creates| L
+end
 
-    subgraph Action["Action Orchestration"]
-        S[Supervisor / Router]
-        T[Documentation Agent]
-        U[Action Agent]
-        V[Scheduling Agent]
-        W[Notion API]
-        X[Discord / Twilio API]
-        Y[Google Calendar API]
-        Z[(document_outputs)]
-        AA[(tasks)]
-        AB[(calendar_events)]
 
-        R --> S
-        S -->|Routes by intent| T
-        S -->|Routes by intent| U
-        S -->|Routes by intent| V
-        T --> W --> Z
-        U --> X --> AA
-        V --> Y --> AB
-    end
+subgraph Semantic["Semantic Grouping & Conflict Resolution"]
+M{Aggregator Router}
+N[Grouping Node]
+O[Aggregator LLM Node
+Group A]
+P[Aggregator LLM Node
+Group B]
+Q[...]
+R[(meeting_inputs table)]
 
-    subgraph Delivery["User Delivery"]
-        AC[User]
-        Z --> AC
-        AA --> AC
-        AB --> AC
-    end
+
+L --> M
+L -->|Labels facts| N
+M -->|Routes each group| O
+M -->|Routes each group| P
+M -->|Routes each group| Q
+N -->|Clusters by context| N
+O -->|Writes resolved context| R
+P -->|Writes resolved context| R
+Q -->|Writes resolved context| R
+end
+
+
+subgraph Action["Action Orchestration"]
+S[Supervisor / Router]
+T[Documentation Agent]
+U[Action Agent]
+V[Scheduling Agent]
+W[Notion API]
+X[Discord / Twilio API]
+Y[Google Calendar API]
+Z[(document_outputs)]
+AA[(tasks)]
+AB[(calendar_events)]
+
+
+R --> S
+S -->|Routes by intent| T
+S -->|Routes by intent| U
+S -->|Routes by intent| V
+T --> W --> Z
+U --> X --> AA
+V --> Y --> AB
+end
+
+
+subgraph Delivery["User Delivery"]
+AC[User]
+Z --> AC
+AA --> AC
+AB --> AC
+end
 ```mermaid
 graph TB
-    subgraph Input[Input & Storage]
-        A[Nylas Webhook]
-        B[Raw Transcript]
-        C[(meetings)]
-        A --> B --> C
-    end
-
-    subgraph Processing[Chunking & Fact Extraction]
-        C --> D[Smart Chunker]
-        D --> E1[Chunk]
-        D --> E2[Chunk]
-        E1 --> F1[LLM Extractor]
-        E2 --> F2[LLM Extractor]
-        F1 --> G[(extracted_facts)]
-        F2 --> G
-    end
-
-    subgraph Semantic[Semantic Grouping]
-        G --> H[Aggregator]
-        H --> I[(meeting_inputs)]
-    end
-
-    subgraph Actions[Action Orchestration]
-        I --> J[Supervisor]
-        J --> K[Docs Agent]
-        J --> L[Action Agent]
-        J --> M[Scheduling Agent]
-    end
+subgraph Input[Input & Storage]
+A[Nylas Webhook]
+B[Raw Transcript]
+C[(meetings)]
+A --> B --> C
+end
+end
 ````
 
 ---
