@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -78,7 +78,7 @@ def smart_chunk_transcript(
                 id=str(uuid.uuid4()),
                 meeting_id=meeting_id,
                 chunk_index=i,
-                date=datetime.utcnow(),
+                date=datetime.now(timezone.utc),
                 speaker=infer_single_speaker(chunk_content),
                 chunk_content=chunk_content,
                 source=source,

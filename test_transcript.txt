@@ -1,0 +1,48 @@
+To test your system effectively, you need a transcript that has overlapping speakers, context shifts, and ambiguous tasks to see if your "Smart Chunker" and "Aggregator" nodes are working correctly.
+
+Here is a 4,500+ character transcript designed to push your 2,000-character chunker into at least 3 distinct pieces.
+
+Meeting Transcript: Q1 Product Sync & Operations
+Date: December 28, 2025 Participants: Alex (Project Manager), Jordan (Lead Dev), Sam (Operations)
+
+Alex: Alright everyone, let's dive in. We have a lot to cover for the Q1 roadmap. Jordan, I saw the notes about the API migration. Is that still on track for Tuesday?
+
+Jordan: Mostly. We hit a snag with the rate limits on the new provider. I need to document the workarounds we found today. Actually, I'll put those technical specs in the project workspace on Notion by end of day so the rest of the team isn't flying blind.
+
+Sam: Speaking of Notion, I noticed the client feedback database is a mess. Jordan, while you're in there, can you create a new database template for the January feedback? It’s getting hard to track what’s been resolved.
+
+Jordan: Sure thing. I’ll add that to my list.
+
+Alex: Great. Sam, what’s the status of the team lunch? People are asking.
+
+Sam: Right. I need to book a room for the team lunch. I'm looking at Friday at noon. I'll put that on the Google Calendar once I get the confirmation from the restaurant.
+
+Alex: Perfect. Oh, and Jordan, I keep getting pings about that bug in the production environment. Have we addressed the API bug yet?
+
+Jordan: I'm on it. I’ll message the dev team about the API bug on Discord right after this call to see who can jump on a hotfix. It’s urgent.
+
+Alex: Okay, let’s move to marketing. We need to send the project timeline to the marketing team. They’re waiting on us to finalize their ad spend.
+
+Sam: I can handle that. I’ll ping them on Discord with the PDF once Alex approves the final dates.
+
+Alex: I’ll approve them by 4 PM. Also, we need to schedule the Q1 Review. It’s a big one. Let’s aim for next Thursday at 3 PM.
+
+Sam: Thursday at 3 PM. Got it. I’ll invite the stakeholders and set up the Zoom link in the calendar.
+
+Jordan: Hey, before we wrap up, I noticed we are missing some documentation on the new architecture.
+
+Alex: You're right. Jordan, can you update the technical specs with the new architecture details? Just make sure it’s in the main project workspace so everyone can find it.
+
+Jordan: Will do. I'll get that done alongside the API documentation.
+
+Sam: One last thing from me—I need to sync the internal calendar with the public-facing one. There’s been some confusion on meeting times. I'll do a full calendar sync tomorrow morning.
+
+Alex: Sounds like a plan. So, to recap: Jordan is handling the Notion docs and the Discord ping for the bug. Sam is booking the lunch, sending the timeline, and setting up the Q1 review.
+
+Jordan: Wait, did we decide on the platform for the marketing files?
+
+Alex: Let’s keep marketing comms on Discord for speed, but the final assets go into Notion.
+
+Sam: Understood. I’ll make sure the marketing team knows.
+
+Alex: Great. Thanks, everyone. Let's get to work.

@@ -117,6 +117,10 @@ def run_extracted_facts_to_inputs_jsonl(
     updated_facts_path = out_dir / f"extracted_facts_labeled_{ts}.jsonl"
     inputs_path = out_dir / f"inputs_{ts}.jsonl"
 
+    # Ensure outputs exist even when empty.
+    updated_facts_path.touch(exist_ok=True)
+    inputs_path.touch(exist_ok=True)
+
     for r in merged_rows:
         _write_jsonl(updated_facts_path, r)
 
