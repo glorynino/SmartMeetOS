@@ -143,7 +143,7 @@ SmartMeetOS/
 
 ## Usage
 
-### 1. Calendar Watcher (Main Process)
+### Calendar Watcher (Main Process)
 
 ```bash
 python check_calendar.py \
@@ -165,13 +165,6 @@ python check_calendar.py \
 
 ---
 
-### 2. Dashboard (Streamlit Web UI)
-
-```bash
-streamlit run webapp/app.py
-```
-
-Access: `http://localhost:8501`
 
 
 ## Architecture
