@@ -265,43 +265,43 @@ graph TB
     style Delivery fill:#4a4a4a
 ```
 
-### Explication du diagramme
+### Architecture diagram — explanation
 
-- **Input & Storage :**
+- **Input & Storage**
 
-  - Sources : webhooks Nylas (transcripts) et fichiers bruts de transcription.
-  - Stockage initial : table `meetings` (transcripts bruts, métadonnées).
-  - Rôle : centraliser l'entrée brute pour traitement asynchrone.
+  - Sources: Nylas webhooks (transcripts) and raw transcript files.
+  - Initial storage: `meetings` table (raw transcripts and metadata).
+  - Purpose: centralize raw inputs for asynchronous processing.
 
-- **Processing — Chunking & Parallel Fact Extraction :**
+- **Processing — Chunking & Parallel Fact Extraction**
 
-  - Découpage des transcriptions en « chunks » (Smart Chunker) pour respecter les limites de tokens.
-  - Chaque chunk est envoyé à des nœuds d'extraction LLM qui extraient faits, décisions, tâches.
-  - Résultat stocké dans `extracted_facts` (champ `group_label` initialement NULL).
-  - Avantage : parallélisme, robustesse sur longues réunions.
+  - Long transcripts are split into manageable "chunks" by the Smart Chunker to respect LLM token limits.
+  - Each chunk is processed by extractor LLM nodes that pull out facts, decisions, and action items.
+  - Extracted items are written to `extracted_facts` (initially with `group_label = NULL`).
+  - Benefit: parallel processing and robustness for long meetings.
 
-- **Semantic Grouping & Conflict Resolution :**
+- **Semantic Grouping & Conflict Resolution**
 
-  - Agrégateur/Router regroupe les `extracted_facts` par contexte/sujet/participants.
-  - Pour chaque groupe, un LLM d'agrégation fusionne les éléments et résout les conflits.
-  - Produit une représentation finale stockée (ex. `meeting_inputs` / `resolved_context`).
+  - An aggregator/router groups `extracted_facts` by context, topic, or participants.
+  - For each group, an aggregator LLM merges items, resolves conflicts, and produces a coherent representation.
+  - Final outputs are stored (e.g., `meeting_inputs` or `resolved_context`).
 
-- **Action Orchestration :**
+- **Action Orchestration**
 
-  - Le Supervisor/Router prend les `meeting_inputs` et route selon l'intent vers :
-    - `Documentation Agent` → publie vers Notion / génère documents (`document_outputs`).
-    - `Action Agent` → envoie notifications (Discord/SMS), crée tâches (`tasks`).
-    - `Scheduling Agent` → planifie événements dans Google Calendar (`calendar_events`).
-  - Intégrations externes (Notion, Discord/Twilio, Google Calendar) reçoivent les objets produits.
+  - A Supervisor/Router examines `meeting_inputs` and routes by intent to agents:
+    - `Documentation Agent` → publishes to Notion or creates document outputs (`document_outputs`).
+    - `Action Agent` → sends notifications (Discord/Twilio/SMS) and creates `tasks`.
+    - `Scheduling Agent` → proposes or schedules events in Google Calendar (`calendar_events`).
+  - External integrations (Notion, Discord/Twilio, Google Calendar) consume these outputs.
 
-- **Delivery (User Delivery) :**
-  - Les outputs finaux (documents, tâches, événements) sont livrés via les canaux choisis.
-  - Historique et traces persistantes dans la DB pour audit et réutilisation.
+- **Delivery (User Delivery)**
+  - Final artifacts (documents, tasks, calendar events) are delivered to users via the configured channels.
+  - Persistent history is stored in the DB for auditing and reuse.
 
-**Points opérationnels & fichiers clés :**
+**Operational notes & key files**
 
-- Vérification webhook Nylas : variable `NYLAS_WEBHOOK_SECRET`.
-- Google OAuth : fichier pointé par `GOOGLE_CLIENT_SECRET_FILE`.
-- État runtime (tokens, logs, médias) : dossier `.secrets/`.
-- Supervisor & codes d'échec : `smartmeetos/notetaker/supervisor.py`, `failure_codes.py`.
-- Tables importantes : `meetings`, `extracted_facts`, `meeting_inputs`, `document_outputs`, `tasks`, `calendar_events`.
+- Nylas webhook verification: `NYLAS_WEBHOOK_SECRET`.
+- Google OAuth credentials: `GOOGLE_CLIENT_SECRET_FILE`.
+- Runtime state (tokens, logs, media): `.secrets/` directory.
+- Supervisor and failure handling: `smartmeetos/notetaker/supervisor.py`, `smartmeetos/notetaker/failure_codes.py`.
+- Important tables: `meetings`, `extracted_facts`, `meeting_inputs`, `document_outputs`, `tasks`, `calendar_events`.
