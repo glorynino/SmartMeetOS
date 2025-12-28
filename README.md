@@ -1,38 +1,56 @@
 # SmartMeetOS
 
-SmartMeetOS watches Google Calendar for Google Meet events and triggers a Nylas Notetaker workflow to join meetings and save transcripts. It automatically extracts meeting insights, creates documentation, schedules follow-ups, and delivers results via Discord, Notion, or email.
+SmartMeetOS watches **Google Calendar** for **Google Meet** events and automatically triggers a **Nylas Notetaker** workflow to join meetings, record transcripts, extract insights, and deliver actionable outputs.
+
+It transforms meetings into structured knowledge: documentation, tasks, follow-ups, and calendar actions — delivered via **Notion, Discord, SMS, or email**.
+
+---
 
 ## Table of Contents
 
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [Usage](#usage)
-- [Architecture](#architecture)
-- [explication of diagram](#Architecture diagram — explanation)
+* [Overview](#smartmeetos)
+* [Features](#features)
+* [Requirements](#requirements)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Project Structure](#project-structure)
+* [Usage](#usage)
+
+  * [Calendar Watcher](#1-calendar-watcher-main-process)
+  * [Dashboard (Web UI)](#2-dashboard-streamlit-web-ui)
+  * [Manual Meeting Processing](#3-manual-meeting-processing)
+* [Architecture](#architecture)
+
+  * [Architecture Diagram](#architecture-1)
+  * [Architecture Diagram — Explanation](#architecture-diagram--explanation)
+* [Operational Notes](#operational-notes--key-files)
+
+---
 
 ## Features
 
-✨ **Core Capabilities:**
+✨ **Core Capabilities**
 
-- 🗓️ **Calendar Monitoring** - Real-time Google Calendar polling for Meet events
-- 📝 **Automatic Transcription** - Nylas Notetaker joins meetings and transcribes conversations
-- 🧠 **AI Processing** - LLM-powered extraction of facts, decisions, and action items
-- 📊 **Semantic Grouping** - Intelligent clustering and conflict resolution of extracted data
-- 📄 **Auto-Documentation** - Generate meeting summaries and documents in Notion
-- ⚡ **Task Management** - Automatic scheduling of follow-ups and action items
-- 💬 **Multi-Channel Delivery** - Send results via Discord, email, SMS, or Notion
-- 🔄 **Webhook Integration** - Real-time updates via Nylas webhooks
-- 🗄️ **Meeting History** - SQLAlchemy-based database for tracking all meetings
+* 🗓️ **Calendar Monitoring** — Real-time polling of Google Calendar for Meet events
+* 📝 **Automatic Transcription** — Nylas Notetaker joins meetings and records transcripts
+* 🧠 **AI-Powered Processing** — LLM extraction of facts, decisions, and action items
+* 📊 **Semantic Grouping** — Intelligent clustering and conflict resolution
+* 📄 **Auto Documentation** — Generate structured meeting notes in Notion
+* ⚡ **Task Management** — Automatic follow-ups and task creation
+* 💬 **Multi-Channel Delivery** — Discord, SMS, email, or Notion
+* 🔄 **Webhook Integration** — Real-time transcript ingestion via Nylas webhooks
+* 🗄️ **Meeting History** — SQLAlchemy-backed persistent storage
+
+---
 
 ## Requirements
 
-- **Python 3.10+** (recommended 3.11+)
-- **Google Calendar OAuth** - Client credentials JSON in `secrets/`
-- **Nylas API Account** - API key and grant ID for Notetaker
-- **SQLite or PostgreSQL** - For meeting and extraction history
+* **Python 3.10+** (3.11+ recommended)
+* **Google Calendar OAuth credentials** (JSON file)
+* **Nylas API account** (API key + Grant ID)
+* **SQLite or PostgreSQL** database
+
+---
 
 ## Installation
 
@@ -43,11 +61,11 @@ git clone https://github.com/glorynino/SmartMeetOS.git
 cd SmartMeetOS
 ```
 
-2. Create a Python virtual environment:
+2. Create and activate a virtual environment:
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
@@ -56,74 +74,77 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Set up your `.env` file (see [Configuration](#configuration) below)
+---
 
 ## Configuration
 
-Create a `.env` file at the project root with the following variables:
+Create a `.env` file at the project root.
 
 ### Required Variables
 
-- `NYLAS_API_KEY` - Your Nylas API key (from Nylas Dashboard)
-- `NYLAS_GRANT_ID` - Grant ID obtained after Nylas authentication
-- `GOOGLE_CLIENT_SECRET_FILE` - Path to Google OAuth credentials JSON (e.g., `secrets/google_credentials.json`)
-- `NYLAS_WEBHOOK_SECRET` - Secret for Nylas webhook verification
+```env
+NYLAS_API_KEY=your_nylas_api_key
+NYLAS_GRANT_ID=your_grant_id
+GOOGLE_CLIENT_SECRET_FILE=secrets/google_credentials.json
+NYLAS_WEBHOOK_SECRET=your_webhook_secret
+```
 
 ### Optional Variables
 
-- `NYLAS_API_BASE` - Nylas API base URL (default: `https://api.us.nylas.com`)
-- `DISCORD_TOKEN` - Discord bot token for notifications
-- `SMS_TO_API_KEY` - SMS provider API key (for SMS notifications)
-- `MISTRAL_API_KEY` - Mistral AI API key for LLM processing
-- `DATABASE_URL` - Database connection URL (default: SQLite local database)
+```env
+NYLAS_API_BASE=https://api.us.nylas.com
+DISCORD_TOKEN=your_discord_bot_token
+SMS_TO_API_KEY=your_sms_api_key
+MISTRAL_API_KEY=your_mistral_api_key
+DATABASE_URL=sqlite:///smartmeetos.db
+```
 
-Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
+> Runtime state (tokens, logs, transcripts) is written to `.secrets/` (ignored by git).
+
+---
 
 ## Project Structure
 
 ```
 SmartMeetOS/
-├── check_calendar.py          # Main entry point - calendar watcher
-├── requirements.txt           # Python dependencies
-├── agents/                    # Multi-agent orchestration
-│   ├── orchestrator.py       # Orchestrates all agents
-│   ├── event_detection_agent.py  # Detects meeting events
-│   ├── actions.py            # Executes action items
-│   ├── documentation.py      # Generates documentation
-│   └── scheduling.py         # Handles scheduling logic
-├── smartmeetos/              # Core application
-│   ├── calendar/            # Google Calendar integration
-│   ├── notetaker/           # Nylas Notetaker integration
+├── check_calendar.py          # Main calendar watcher entrypoint
+├── requirements.txt
+├── agents/                   # Multi-agent orchestration
+│   ├── orchestrator.py
+│   ├── event_detection_agent.py
+│   ├── actions.py
+│   ├── documentation.py
+│   └── scheduling.py
+├── smartmeetos/              # Core application logic
+│   ├── calendar/
+│   ├── notetaker/
 │   │   ├── nylas_notetaker.py
-│   │   ├── supervisor.py    # Supervises meeting joins
+│   │   ├── supervisor.py
 │   │   └── failure_codes.py
-│   └── webapp/              # Streamlit dashboard
-├── services/                # External API integrations
+│   └── webapp/
+├── services/                 # External API clients
 │   ├── calendar_client.py
 │   ├── discord_client.py
-│   ├── nylas_client.py
 │   ├── notion_client.py
-│   └── tools/              # Utility tools
-├── database/               # Database models & migrations
+│   └── nylas_client.py
+├── processing/
+│   └── chunker.py
+├── database/
 │   ├── models.py
 │   ├── connection.py
 │   └── init_db.py
-├── processing/            # Data processing
-│   └── chunker.py        # Smart transcript chunking
-├── Action_agent/          # Legacy action agents
-├── docs/                 # Setup & documentation guides
+├── docs/
 │   ├── google_calendar_setup.md
 │   ├── nylas_notetaker_setup.md
-│   ├── nylas_webhooks.md
-│   └── meeting_joining_reliability.md
-└── scheduling-agent/     # Dedicated scheduling agent
+│   └── nylas_webhooks.md
+└── .secrets/                 # Runtime state (ignored by git)
 ```
+
+---
 
 ## Usage
 
 ### 1. Calendar Watcher (Main Process)
-
-Start the calendar watcher to continuously monitor for Google Meet events:
 
 ```bash
 python check_calendar.py \
@@ -134,172 +155,96 @@ python check_calendar.py \
   --poll-seconds 15
 ```
 
-**Options:**
+**Options**
 
-- `--nylas-notetaker` - Enable Nylas Notetaker integration
-- `--nylas-grant-id` - Nylas grant ID (or set `NYLAS_GRANT_ID` env var)
-- `--calendar` - Calendar ID to monitor (default: `primary`)
-- `--window-minutes` - Look-ahead window in minutes (default: 120)
-- `--poll-seconds` - Poll interval in seconds (default: 60)
-- `--dry-run` - Preview actions without executing
-- `--list-calendars` - List available calendars and exit
+* `--nylas-notetaker` — Enable Notetaker
+* `--nylas-grant-id` — Grant ID (or env var)
+* `--calendar` — Calendar ID (default: primary)
+* `--window-minutes` — Look-ahead window
+* `--poll-seconds` — Polling interval
+* `--dry-run` — No side effects
+
+---
 
 ### 2. Dashboard (Streamlit Web UI)
-
-Start the interactive dashboard:
 
 ```bash
 streamlit run webapp/app.py
 ```
 
-Access at `http://localhost:8501`
+Access: `http://localhost:8501`
+
+---
 
 ### 3. Manual Meeting Processing
 
-Process a specific meeting:
-
-```bash
-python -c "
+```python
 from agents.orchestrator import start_calendar_watcher
+
 watcher = start_calendar_watcher(
-    calendar_id='primary',
+    calendar_id="primary",
     nylas_notetaker=True,
-    grant_id='<GRANT_ID>'
+    grant_id="<GRANT_ID>"
 )
-print(f'Watcher running with PID: {watcher.pid}')
-"
 ```
+
+---
 
 ## Architecture
 
+### Architecture Diagram
+
 ```mermaid
 graph TB
-    subgraph Input["Input & Storage"]
+    subgraph Input[Input & Storage]
         A[Nylas Webhook]
         B[Raw Transcript]
-        C[(meetings table)]
-        A --> B
-        B --> C
+        C[(meetings)]
+        A --> B --> C
     end
 
-    subgraph Processing["Chunking & Parallel Fact Extraction"]
-        D{Processing Pipeline}
-        E[Smart Chunker Node]
-        F[Chunk 1]
-        G[Chunk 2]
-        H[...]
-        I[Chunk Extractor LLM Node]
-        J[Chunk Extractor LLM Node]
-        K[...]
-        L[(extracted_facts<br/>group_label: NULL)]
-
-        C --> D
-        D --> E
-        E -->|Splits into| F
-        E -->|Splits into| G
-        E -->|Splits into| H
-        F --> I
-        G --> J
-        H --> K
-        I -->|Creates| L
-        J -->|Creates| L
-        K -->|Creates| L
+    subgraph Processing[Chunking & Fact Extraction]
+        C --> D[Smart Chunker]
+        D --> E1[Chunk]
+        D --> E2[Chunk]
+        E1 --> F1[LLM Extractor]
+        E2 --> F2[LLM Extractor]
+        F1 --> G[(extracted_facts)]
+        F2 --> G
     end
 
-    subgraph Semantic["Semantic Grouping & Conflict Resolution"]
-        M{Aggregator Router}
-        N[Grouping Node]
-        O[Aggregator LLM Node<br/>for Group A]
-        P[Aggregator LLM Node<br/>for Group B]
-        Q[...]
-        R[(meeting_inputs table)]
-
-        L --> M
-        L -->|Labels facts with<br/>group_label| N
-        M -->|Routes each group| O
-        M -->|Routes each group| P
-        M -->|Routes each group| Q
-        N -->|Queries ungrouped facts<br/>Clusters by context| N
-        O -->|Writes final, resolved<br/>context to| R
-        P -->|Writes final, resolved<br/>context to| R
-        Q -->|Writes final, resolved<br/>context to| R
+    subgraph Semantic[Semantic Grouping]
+        G --> H[Aggregator]
+        H --> I[(meeting_inputs)]
     end
 
-    subgraph Action["Action Orchestration"]
-        S[Supervisor/Router Node]
-        T[Documentation Agent]
-        U[Action Agent]
-        V[Scheduling Agent]
-        W[Notion API]
-        X[Discord/Twilio API]
-        Y[Google Calendar API]
-        Z[(document_outputs)]
-        AA[(tasks)]
-        AB[(calendar_events)]
-
-        R --> S
-        S -->|Routes by intent| T
-        S -->|Routes by intent| U
-        S -->|Routes by intent| V
-        T --> W
-        U --> X
-        V --> Y
-        W --> Z
-        X --> AA
-        Y --> AB
+    subgraph Actions[Action Orchestration]
+        I --> J[Supervisor]
+        J --> K[Docs Agent]
+        J --> L[Action Agent]
+        J --> M[Scheduling Agent]
     end
-
-    subgraph Delivery["User Delivery"]
-        AC[User Delivery]
-        Z --> AC
-        AA --> AC
-        AB --> AC
-    end
-
-    style Input fill:#4a4a4a
-    style Processing fill:#5a5a5a
-    style Semantic fill:#4a4a4a
-    style Action fill:#5a5a5a
-    style Delivery fill:#4a4a4a
 ```
 
-### Architecture diagram — explanation
+---
 
-- **Input & Storage**
+### Architecture Diagram — Explanation
 
-  - Sources: Nylas webhooks (transcripts) and raw transcript files.
-  - Initial storage: `meetings` table (raw transcripts and metadata).
-  - Purpose: centralize raw inputs for asynchronous processing.
+* **Input & Storage**: Nylas webhooks deliver transcripts stored in `meetings`.
+* **Processing**: Transcripts are chunked and processed in parallel by LLMs.
+* **Semantic Layer**: Extracted facts are grouped and conflicts resolved.
+* **Action Layer**: Supervisor routes outputs to documentation, actions, or scheduling agents.
+* **Delivery**: Results are sent to Notion, Discord, SMS, or Calendar.
 
-- **Processing — Chunking & Parallel Fact Extraction**
+---
 
-  - Long transcripts are split into manageable "chunks" by the Smart Chunker to respect LLM token limits.
-  - Each chunk is processed by extractor LLM nodes that pull out facts, decisions, and action items.
-  - Extracted items are written to `extracted_facts` (initially with `group_label = NULL`).
-  - Benefit: parallel processing and robustness for long meetings.
+## Operational Notes & Key Files
 
-- **Semantic Grouping & Conflict Resolution**
+* Google OAuth: `GOOGLE_CLIENT_SECRET_FILE`
+* Webhook verification: `NYLAS_WEBHOOK_SECRET`
+* Failure handling: `smartmeetos/notetaker/failure_codes.py`
+* Runtime state: `.secrets/`
 
-  - An aggregator/router groups `extracted_facts` by context, topic, or participants.
-  - For each group, an aggregator LLM merges items, resolves conflicts, and produces a coherent representation.
-  - Final outputs are stored (e.g., `meeting_inputs` or `resolved_context`).
+---
 
-- **Action Orchestration**
-
-  - A Supervisor/Router examines `meeting_inputs` and routes by intent to agents:
-    - `Documentation Agent` → publishes to Notion or creates document outputs (`document_outputs`).
-    - `Action Agent` → sends notifications (Discord/Twilio/SMS) and creates `tasks`.
-    - `Scheduling Agent` → proposes or schedules events in Google Calendar (`calendar_events`).
-  - External integrations (Notion, Discord/Twilio, Google Calendar) consume these outputs.
-
-- **Delivery (User Delivery)**
-  - Final artifacts (documents, tasks, calendar events) are delivered to users via the configured channels.
-  - Persistent history is stored in the DB for auditing and reuse.
-
-**Operational notes & key files**
-
-- Nylas webhook verification: `NYLAS_WEBHOOK_SECRET`.
-- Google OAuth credentials: `GOOGLE_CLIENT_SECRET_FILE`.
-- Runtime state (tokens, logs, media): `.secrets/` directory.
-- Supervisor and failure handling: `smartmeetos/notetaker/supervisor.py`, `smartmeetos/notetaker/failure_codes.py`.
-- Important tables: `meetings`, `extracted_facts`, `meeting_inputs`, `document_outputs`, `tasks`, `calendar_events`.
+**SmartMeetOS** — From meetings to decisions, automatically.
