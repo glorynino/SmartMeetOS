@@ -1,4 +1,4 @@
-# agent_notion_role_clair.py - Groq génère rapport + Mermaid → Notion
+# rapport + Mermaid → Notion
 from dataclasses import dataclass, asdict
 from langchain.agents import create_agent
 from langchain_groq import ChatGroq
