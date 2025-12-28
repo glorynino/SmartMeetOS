@@ -18,7 +18,6 @@ It transforms meetings into structured knowledge: documentation, tasks, follow-u
 
   * [Calendar Watcher](#1-calendar-watcher-main-process)
   * [Dashboard (Web UI)](#2-dashboard-streamlit-web-ui)
-  * [Manual Meeting Processing](#3-manual-meeting-processing)
 * [Architecture](#architecture)
 
   * [Architecture Diagram](#architecture-1)
@@ -176,17 +175,6 @@ Access: `http://localhost:8501`
 
 ---
 
-### 3. Manual Meeting Processing
-
-```python
-from agents.orchestrator import start_calendar_watcher
-
-watcher = start_calendar_watcher(
-    calendar_id="primary",
-    nylas_notetaker=True,
-    grant_id="<GRANT_ID>"
-)
-```
 
 ---
 
