@@ -173,10 +173,6 @@ streamlit run webapp/app.py
 
 Access: `http://localhost:8501`
 
----
-
-
----
 
 ## Architecture
 
