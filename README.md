@@ -29,7 +29,7 @@ Environment variables supported:
 
 Runtime state (tokens, history logs, transcripts) is written under `.secrets/` (ignored by git).
 
-## Architecture (big project)
+## Architecture 
 
 ```mermaid
 graph TB
