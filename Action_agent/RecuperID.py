@@ -4,7 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
     raise RuntimeError("TOKEN manquant dans le fichier .env")
