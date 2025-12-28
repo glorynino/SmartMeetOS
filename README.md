@@ -17,7 +17,6 @@ It transforms meetings into structured knowledge: documentation, tasks, follow-u
 * [Usage](#usage)
 
   * [Calendar Watcher](#1-calendar-watcher-main-process)
-  * [Dashboard (Web UI)](#2-dashboard-streamlit-web-ui)
 * [Architecture](#architecture)
 
   * [Architecture Diagram](#architecture-1)
