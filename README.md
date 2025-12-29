@@ -15,6 +15,7 @@ It transforms meetings into structured knowledge: documentation, tasks, follow-u
 * [Configuration](#configuration)
 * [Project Structure](#project-structure)
 * [Usage](#usage)
+* [Interface](#interface)
 
   * [Calendar Watcher](#1-calendar-watcher-main-process)
 * [Architecture](#architecture)
@@ -163,9 +164,89 @@ python check_calendar.py \
 * `--dry-run` — No side effects
 
 ---
+## Interface 
+
+Minimalist interface
+
+### Navigation 
+Before Login 
+* Recaply Logo 
+* Log In
+* Sign In
+
+After login 
+*  Recaply Logo
+*  Meetings
+* Chat
+* Settings
+* Profile
+
+
+### Available Pages
+`/login` -Login
+
+- Email / password form
+- Link to sign up
+
+
+`/signup` — Sign Up
+
+- Name
+- Email
+- Password
+- Link to login
+
+
+`/chat` Main Interface 
+
+- Conversational interface
+- Input field at the bottom with placeholder
+- API connection indicator
+
+`meetings` meetings list 
+
+- Data fetched via GET /api/meetings
+- Mock data when API is unavailable
+- Meeting cards including:
+   - Title
+   - Date
+   - Status
+   - Source (Zoom, Google Meet…)
+- View Details button
+- Refresh button
+- API connection indicator
+
+
+`/settings` Settings
+
+- Start / stop bot
+- Real-time bot status
+- API key field (simulated)
+- Dark mode
+- Danger Zone:
+- Clear conversations
 
 
 
+API Integration
+
++ Used Endpoints
+
+- ` POST /api/users/{id}/prompt` — save chat messages
+- ` GET /api/meetings` — fetch meetings
+- ` GET /api/bot/status` — bot status
+- ` POST /api/bot/start `— start bot
+- ` POST /api/bot/stop` — stop bot
+
+
+Technical
+- Next.js 14 (App Router)
+- Tailwind CSS
+- Reusable components
+
+
+
+---
 ## Architecture
 
 ### Architecture Diagram
